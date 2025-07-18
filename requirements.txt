@@ -1,0 +1,7 @@
+streamlit
+openpyxl
+pandas
+ipykernel
+numpy
+reportlab==4.0.4
+xlsxwriter==3.1.3
