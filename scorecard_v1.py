@@ -650,10 +650,7 @@ def main():
     elif page == "🎯 Knockout Bracket":
         show_knockout_bracket()
 
-
 def show_scoreboard():
-    #st.markdown('<div class="tournament-container">', unsafe_allow_html=True)
-    
     col1, col2 = st.columns([3, 1])
     
     with col1:
@@ -665,168 +662,193 @@ def show_scoreboard():
             for i, (_, team) in enumerate(teams_df.iterrows(), 1):
                 gd = team['goals_for'] - team['goals_against']
                 
-                if i <= 4:
-                    position_class = f"position-{i}"
+                # Football-themed position indicators
+                if i == 1:
+                    position_indicator = "👑"  # Crown for champion
+                    bg_color = "#FFD700"
+                    border_color = "#FFA000"
+                elif i == 2:
+                    position_indicator = "🥈"  # Silver medal
+                    bg_color = "#E8F5E8"
+                    border_color = "#4CAF50"
+                elif i == 3:
+                    position_indicator = "🥉"  # Bronze medal
+                    bg_color = "#E8F5E8"
+                    border_color = "#4CAF50"
+                elif i == 4:
+                    position_indicator = "⚡"  # Lightning for European competition
+                    bg_color = "#FFF3E0"
+                    border_color = "#FF9800"
+                elif i <= 6:
+                    position_indicator = "🏆"  # Trophy for European spots
+                    bg_color = "#FFF3E0"
+                    border_color = "#FF9800"
+                elif i <= len(teams_df) - 3:
+                    position_indicator = "⚽"  # Football for safe positions
+                    bg_color = "#F5F5F5"
+                    border_color = "#9E9E9E"
                 else:
-                    position_class = "position-other"
-
+                    position_indicator = "🔻"  # Red triangle for relegation zone
+                    bg_color = "#FFEBEE"
+                    border_color = "#F44336"
+                
+                # Goal difference color logic
+                gd_color = 'green' if gd > 0 else 'red' if gd < 0 else 'orange'
+                
                 st.markdown(f"""
-<style>
-.scoreboard-tile {{
-    padding: 8px;
-    margin-bottom: 10px;
-    background: #c7c7c7; 
-    
-    border-radius: 10px;
-    box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
-}}
-
-.scoreboard-content {{
-    display: flex;
-    flex-direction: column;
-}}
-
-@media (min-width: 600px) {{
-    .scoreboard-content {{
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }}
-}}
-
-.team-info {{
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}}
-
-@media (min-width: 600px) {{
-    .team-info {{
-        margin-bottom: 0;
-    }}
-}}
-
-.team-position {{
-    font-weight: bold;
-    font-size: 1rem;
-    margin-right: 8px;
-}}
-
-.team-name {{
-    font-size: 1rem;
-    font-weight: 600;
-    color: #000;
-}}
-
-.team-stats {{
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-}}
-
-.stat {{
-    text-align: center;
-}}
-
-.stat-label {{
-    font-size: 0.7rem;
-    color: #000000;
-}}
-
-.stat-value {{
-    font-size: 1rem;
-    font-weight: 600;
-}}
-
-.stat-gd {{
-    color: {'green' if gd > 0 else 'red' if gd < 0 else 'orange'};
-}}
-</style>
-
-<div class="scoreboard-tile">
-    <div class="scoreboard-content">
-        <div class="team-info">
-            <span class="team-position {position_class}">{i}</span>
-            <span class="team-name">{team['name']}</span>
-        </div>
-        <div class="team-stats">
-            <div class="stat">
-                <div class="stat-label">Played</div>
-                <div class="stat-value" style="color:#000000;">{team['matches_played']}</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">GD</div>
-                <div class="stat-value stat-gd">{gd:+d}</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Points</div>
-                <div class="stat-value" style="color:#1B5E20;">{team['points']}</div>
-            </div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-                #  pulse-animation">
-                # st.markdown(f'''
-                # <div class="scoreboard-tile">
-                #     <div style="display: flex; align-items: center; justify-content: space-between;">
-                #         <div style="display: flex; align-items: center;">
-                #             <span class="team-position {position_class}">{i}</span>
-                #             <span style="font-size: 1.3rem; font-weight: 600;color: #000000;">{team['name']}</span>
-                #         </div>
-                #         <div style="display: flex; gap: 2rem; align-items: center;">
-                #             <div style="text-align: center;">
-                #                 <div style="font-size: 0.9rem; color: #666;">Played</div>
-                #                 <div style="font-size: 1.2rem; font-weight: 600;color: #000000;">{team['matches_played']}</div>
-                #             </div>
-                #             <div style="text-align: center;">
-                #                 <div style="font-size: 0.9rem; color: #666;">GD</div>
-                #                 <div style="font-size: 1.2rem; font-weight: 600; color: {'green' if gd > 0 else 'red' if gd < 0 else 'orange'};">{gd:+d}</div>
-                #             </div>
-                #             <div style="text-align: center;">
-                #                 <div style="font-size: 0.9rem; color: #666;">Points</div>
-                #                 <div style="font-size: 1.4rem; font-weight: 700; color: #1B5E20;">{team['points']}</div>
-                #             </div>
-                #         </div>
-                #     </div>
-                # </div>
-                # ''', unsafe_allow_html=True)
+                <style>
+                .scoreboard-tile-{i} {{
+                    padding: 12px;
+                    margin-bottom: 8px;
+                    background: {bg_color}; 
+                    border-radius: 10px;
+                    border-left: 6px solid {border_color};
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }}
+                
+                .scoreboard-content-{i} {{
+                    display: flex;
+                    flex-direction: column;
+                }}
+                
+                @media (min-width: 600px) {{
+                    .scoreboard-content-{i} {{
+                        flex-direction: row;
+                        justify-content: space-between;
+                        align-items: center;
+                    }}
+                }}
+                
+                .team-info-{i} {{
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }}
+                
+                @media (min-width: 600px) {{
+                    .team-info-{i} {{
+                        margin-bottom: 0;
+                    }}
+                }}
+                
+                .team-position-{i} {{
+                    font-weight: bold;
+                    font-size: 1rem;
+                    margin-right: 8px;
+                    color: #000000;
+                }}
+                
+                .team-name-{i} {{
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #000;
+                }}
+                
+                .team-stats-{i} {{
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1rem;
+                }}
+                
+                .stat-{i} {{
+                    text-align: center;
+                }}
+                
+                .stat-label-{i} {{
+                    font-size: 0.7rem;
+                    color: #000000;
+                }}
+                
+                .stat-value-{i} {{
+                    font-size: 1rem;
+                    font-weight: 600;
+                }}
+                
+                .stat-gd-{i} {{
+                    color: {gd_color};
+                }}
+                </style>
+                
+                <div class="scoreboard-tile-{i}">
+                    <div class="scoreboard-content-{i}">
+                        <div class="team-info-{i}">
+                            <span class="team-position-{i}">{i}</span>
+                            <span class="team-name-{i}">{position_indicator} {team['name']}</span>
+                        </div>
+                        <div class="team-stats-{i}">
+                            <div class="stat-{i}">
+                                <div class="stat-label-{i}">Played</div>
+                                <div class="stat-value-{i}" style="color:#000000;">{team['matches_played']}</div>
+                            </div>
+                            <div class="stat-{i}">
+                                <div class="stat-label-{i}">GF</div>
+                                <div class="stat-value-{i}" style="color:#000000;">{team['goals_for']}</div>
+                            </div>
+                            <div class="stat-{i}">
+                                <div class="stat-label-{i}">GA</div>
+                                <div class="stat-value-{i}" style="color:#000000;">{team['goals_against']}</div>
+                            </div>
+                            <div class="stat-{i}">
+                                <div class="stat-label-{i}">GD</div>
+                                <div class="stat-value-{i} stat-gd-{i}">{gd:+d}</div>
+                            </div>
+                            <div class="stat-{i}">
+                                <div class="stat-label-{i}">Points</div>
+                                <div class="stat-value-{i}" style="color:#1B5E20;">{team['points']}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.info("No teams available. Please upload fixtures first.")
     
     with col2:
-        st.subheader("📈 Tournament Stats")
+        st.subheader("📈 Stats")
         
         matches_df = get_matches()
         total_matches = len(matches_df)
         completed_matches = len(matches_df[matches_df['completed'] == True])
         
         st.markdown(f'''
-        <div class="stats-card">
-            <h3 style="color: #000000;">📊 Match Statistics</h3>
-            <p style="color: #000000;"><strong>Total Matches:</strong> {total_matches}</p>
-            <p style="color: #000000;"><strong>Completed:</strong> {completed_matches}</p>
-            <p style="color: #000000;"><strong>Remaining:</strong> {total_matches - completed_matches}</p>
+        <div style="
+            background: linear-gradient(135deg, #2196F3, #21CBF3); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 10px 0;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        ">
+            <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">📊 MATCHES</div>
+            <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
+                TOTAL: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches}</span><br>
+                DONE: <span style="font-size: 1.1rem; font-weight: bold;">{completed_matches}</span><br>
+                LEFT: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches - completed_matches}</span>
+            </div>
         </div>
         ''', unsafe_allow_html=True)
         
         if not teams_df.empty:
             top_team = teams_df.iloc[0]
             st.markdown(f'''
-            <div class="stats-card">
-                <h3 style="color: #000000;">🏆 Current Leader</h3>
-                <p style="color: #000000;"><strong>{top_team['name']}</strong></p>
-                <p style="color: #000000;">Points: {top_team['points']}</p>
-                <p style="color: #000000;">Goals: {top_team['goals_for']}</p>
-                <p style="color: #000000;">GD: {top_team['goals_for'] - top_team['goals_against']:+d}</p>
+            <div style="
+                background: linear-gradient(135deg, #FF6B35, #F7931E); 
+                padding: 15px; 
+                border-radius: 12px; 
+                margin: 10px 0;
+                box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+            ">
+                <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">🏆 LEADER</div>
+                <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
+                    <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">{top_team['name']}</div>
+                    POINTS: <span style="font-size: 1.2rem; font-weight: bold;">{top_team['points']}</span><br>
+                    GOALS: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for']}</span><br>
+                    GD: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for'] - top_team['goals_against']:+d}</span>
+                </div>
             </div>
             ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_fixtures():
-    st.markdown('<div class="tournament-container">', unsafe_allow_html=True)
+    #st.markdown('<div class="tournament-container">', unsafe_allow_html=True)
     st.subheader("📅 Match Fixtures")
     
     matches_df = get_matches()
@@ -837,46 +859,39 @@ def show_fixtures():
         return
     
     if st.session_state.admin_logged_in:
-        #st.markdown('<div class="admin-panel">', unsafe_allow_html=True)
         st.info("🔧 Admin Mode: Update match scores")
-        st.markdown('</div>', unsafe_allow_html=True)
         
         for _, match in matches_df.iterrows():
             status = "✅ Completed" if match['completed'] else "⏳ Pending"
-            fixture_class = "match-completed" if match['completed'] else "match-pending"
             
             with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status}", 
                            expanded=not match['completed']):
                 
-                col1, col2, col3 = st.columns([2, 1, 2])
+                # Mobile-optimized layout: Stack vertically instead of side-by-side
+                st.markdown(f"**🏠 {match['team1']}**")
+                score1 = st.number_input("Goals", 
+                                       min_value=0, max_value=20, 
+                                       value=int(match['score1']) if match['completed'] else 0,
+                                       key=f"score1_{match['id']}")
                 
-                with col1:
-                    st.markdown(f"**🏠 {match['team1']}**")
-                    score1 = st.number_input("Goals", 
-                                           min_value=0, max_value=20, 
-                                           value=int(match['score1']) if match['completed'] else 0,
-                                           key=f"score1_{match['id']}")
+                st.markdown("**VS**")
                 
-                with col2:
-                    st.markdown("**VS**")
-                    if st.button("Update", key=f"update_{match['id']}", type="primary"):
-                        score2 = st.session_state[f"score2_{match['id']}"]
-                        if update_match_score(match['id'], score1, score2):
-                            st.success("Updated!")
-                            st.rerun()
+                st.markdown(f"**🚌 {match['team2']}**")
+                score2 = st.number_input("Goals", 
+                                       min_value=0, max_value=20, 
+                                       value=int(match['score2']) if match['completed'] else 0,
+                                       key=f"score2_{match['id']}")
                 
-                with col3:
-                    st.markdown(f"**🚌 {match['team2']}**")
-                    score2 = st.number_input("Goals", 
-                                           min_value=0, max_value=20, 
-                                           value=int(match['score2']) if match['completed'] else 0,
-                                           key=f"score2_{match['id']}")
+                if st.button("Update Match", key=f"update_{match['id']}", type="primary", use_container_width=True):
+                    if update_match_score(match['id'], score1, score2):
+                        st.success("Updated!")
+                        st.rerun()
                 
                 if match['completed']:
                     winner = match['team1'] if match['score1'] > match['score2'] else match['team2'] if match['score2'] > match['score1'] else "Draw"
-                    st.success(f"🏆 Final Score: {match['team1']} {int(match['score1'])} - {int(match['score2'])} {match['team2']} ({winner})")
+                    st.success(f"🏆 Final: {match['team1']} {int(match['score1'])} - {int(match['score2'])} {match['team2']} ({winner})")
     else:
-        # Read-only view
+        # Read-only view - Mobile optimized
         completed_matches = matches_df[matches_df['completed'] == True]
         pending_matches = matches_df[matches_df['completed'] == False]
         
@@ -885,13 +900,10 @@ def show_fixtures():
             for _, match in completed_matches.iterrows():
                 result_emoji = "🏆" if match['score1'] != match['score2'] else "🤝"
                 st.markdown(f'''
-                <div class="match-fixture match-completed">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: 600; font-size: 1.1rem; color: #000000;">{match['match_name']}</div>
-                        <div style="text-align: center; font-size: 1.3rem; font-weight: 700; color: #000000;">
-                            {match['team1']} <span style="color: #1B5E20;">{int(match['score1'])} - {int(match['score2'])}</span> {match['team2']}
-                        </div>
-                        <div style="font-size: 1.5rem;">{result_emoji}</div>
+                <div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
+                    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}</div>
+                    <div style="text-align: center; font-size: 0.9rem;color: #000000;">
+                        {match['team1']} <strong><span style="margin: 0 9px;">{int(match['score1'])} - {int(match['score2'])}</span></strong> {match['team2']} {result_emoji}
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
@@ -900,33 +912,164 @@ def show_fixtures():
             st.subheader("⏳ Upcoming Matches")
             for _, match in pending_matches.iterrows():
                 st.markdown(f'''
-                <div class="match-fixture match-pending">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: 600; font-size: 1.1rem; color: #000000;">{match['match_name']}</div>
-                        <div style="text-align: center; font-size: 1.3rem; font-weight: 700; color: #000000;">
-                            {match['team1']} <span style="color: #FF9800;">vs</span> {match['team2']}
-                        </div>
-                        <div style="font-size: 1.5rem;">⏳</div>
+                <div style="background: #FFF3E0; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #FF9800;">
+                    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}</div>
+                    <div style="text-align: center; font-size: 0.9rem;color: #000000;">
+                        {match['team1']}  <strong><span style="color: #FF9800; margin: 0 7px;">  vs  </span></strong>  {match['team2']} ⏳
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
-
-
+import os
+import base64
 # Complete the missing show_knockout_bracket function
 def show_knockout_bracket():
-    #st.markdown('<div class="bracket-container">', unsafe_allow_html=True)
     st.subheader("🎯 Knockout Bracket")
     
-    # Check if league stage is complete enough for knockout
+    # Streamlined CSS with horizontal layout
+    st.markdown("""
+    <style>
+
+    .bracket-layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3rem;
+        flex-wrap: wrap;
+    }
+    
+    .semi-finals {
+        display: flex;
+        flex-direction: row;
+        gap: 4rem;
+    }
+    
+    .match-box {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        min-width: 280px;
+        border: 2px solid rgba(255,255,255,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .final-box {
+        background: linear-gradient(145deg, #dc143c, #ff1744);
+        border: 3px solid #ff4444;
+        box-shadow: 0 0 25px rgba(220, 20, 60, 0.7);
+        min-width: 280px;
+    }
+    
+    .final-box:hover {
+        box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
+    }
+    
+    .match-title {
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .teams-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 2rem;
+    }
+    
+    .team-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .team-logo {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        border: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    .team-name {
+        color: white;
+        font-weight: bold;
+        font-size: 1rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    }
+    
+    .scores-row {
+        display: flex;
+        justify-content: center;
+        gap: 4rem;
+        margin-top: 1rem;
+    }
+    
+    .vs-divider {
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        align-self: center;
+        margin: 0 1rem;
+    }
+    
+    .connector {
+        color: #ffd700;
+        font-size: 3rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        margin: 0 1rem;
+    }
+    
+    .champion-banner {
+        text-align: center;
+        margin-top: 2rem;
+        background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 3px solid #ff8c00;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+    
+    .placeholder-logo {
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.1);
+        border: 2px dashed rgba(255,255,255,0.3);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .team-score {
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        background: rgba(0,0,0,0.3);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        min-width: 40px;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Check if league stage is complete
     matches_df = get_matches()
     if matches_df.empty or len(matches_df[matches_df['completed'] == True]) < len(matches_df) * 0.8:
         st.warning("⚠️ Complete more league matches to generate knockout bracket")
-        st.markdown('</div>', unsafe_allow_html=True)
         return
     
-    # Generate bracket if admin
+    # Generate bracket button (admin only)
     if st.session_state.admin_logged_in:
         if st.button("🔄 Generate Knockout Bracket", type="primary"):
             generate_knockout_bracket()
@@ -934,110 +1077,177 @@ def show_knockout_bracket():
             st.rerun()
     
     knockout_df = get_knockout_matches()
-    
     if knockout_df.empty:
-        st.info("No knockout matches generated yet. Use the button above to create bracket.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.info("No knockout matches generated yet.")
         return
     
-    # Display bracket visually
-    col1, col2, col3 = st.columns([2, 1, 2])
+    # Display bracket
+    #st.markdown('<div class="bracket-container">', unsafe_allow_html=True)
+    st.markdown('<div class="bracket-layout">', unsafe_allow_html=True)
     
     # Semi-finals
-    semis = knockout_df[knockout_df['stage'] == 'semi']
-    with col1:
-        st.markdown("### Semi-Finals")
-        for _, match in semis.iterrows():
-            status = "✅" if match['completed'] else "⏳"
-            score_display = f"{int(match['score1'])} - {int(match['score2'])}" if match['completed'] else "vs"
-            
-            st.markdown(f'''
-            <div class="bracket-match bracket-semi floating-animation">
-                <div style="font-weight: 700; margin-bottom: 1rem;color: #000000;">{match['match_name']}</div>
-                <div style="font-size: 1.2rem;color: #000000;">{match['team1']} {score_display} {match['team2']}</div>
-                <div style="margin-top: 1rem; font-size: 1.5rem;color: #000000;">{status}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-            
-            # Admin score update
-            if st.session_state.admin_logged_in and not match['completed']:
-                with st.expander(f"Update {match['match_name']}"):
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        s1 = st.number_input(f"{match['team1']} Goals", 0, 20, key=f"ko_s1_{match['id']}")
-                    with col_b:
-                        s2 = st.number_input(f"{match['team2']} Goals", 0, 20, key=f"ko_s2_{match['id']}")
-                    
-                    if st.button("Update Score", key=f"ko_update_{match['id']}"):
-                        update_knockout_match_score(match['id'], s1, s2)
-                        st.success("Score updated!")
-                        st.rerun()
+    st.markdown('<div class="semi-finals">', unsafe_allow_html=True)
     
-    # Connection lines (visual)
-    with col2:
-        st.markdown("### 🏆")
-        st.markdown('''
-        <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
-            <div style="font-size: 3rem;color: #000000; animation: pulse 2s infinite;">⚽</div>
+    semis = knockout_df[knockout_df['stage'] == 'semi'].sort_values('id')
+    for i, (_, match) in enumerate(semis.iterrows()):
+        status = "✅" if match['completed'] else "⏳"
+        
+        # Get team logos
+        logo1_path = f"team_logo/{match['team1'].lower()}.png"
+        if not os.path.exists(logo1_path):
+            logo1_path = f"team_logo/{match['team1'].lower()}.jpg"
+        
+        logo2_path = f"team_logo/{match['team2'].lower()}.png"
+        if not os.path.exists(logo2_path):
+            logo2_path = f"team_logo/{match['team2'].lower()}.jpg"
+        
+        # Team 1 logo HTML
+        if os.path.exists(logo1_path):
+            with open(logo1_path, "rb") as f:
+                import base64
+                encoded1 = base64.b64encode(f.read()).decode()
+                team1_logo = f'<img src="data:image/png;base64,{encoded1}" class="team-logo">'
+        else:
+            team1_logo = '<div class="placeholder-logo">🏆</div>'
+        
+        # Team 2 logo HTML
+        if os.path.exists(logo2_path):
+            with open(logo2_path, "rb") as f:
+                encoded2 = base64.b64encode(f.read()).decode()
+                team2_logo = f'<img src="data:image/png;base64,{encoded2}" class="team-logo">'
+        else:
+            team2_logo = '<div class="placeholder-logo">🏆</div>'
+        
+        # Single markdown with complete HTML structure
+        st.markdown(f'''
+        <div class="match-box">
+            <div class="match-title">Semi-Final {i+1} {status}</div>
+            <div class="teams-container">
+                <div class="team-section">
+                    {team1_logo}
+                    <div class="team-name">{match["team1"]}</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-section">
+                    {team2_logo}
+                    <div class="team-name">{match["team2"]}</div>
+                </div>
+            </div>
+            <div class="scores-row">
+                <div class="team-score">{"-" if not match['completed'] else int(match["score1"])}</div>
+                <div class="team-score">{"-" if not match['completed'] else int(match["score2"])}</div>
+            </div>
         </div>
         ''', unsafe_allow_html=True)
+        
+        # Admin score update
+        if st.session_state.admin_logged_in and not match['completed']:
+            with st.expander(f"📝 Update SF{i+1} Score"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    s1 = st.number_input(f"{match['team1']} Goals", 0, 20, key=f"ko_s1_{match['id']}")
+                with col_b:
+                    s2 = st.number_input(f"{match['team2']} Goals", 0, 20, key=f"ko_s2_{match['id']}")
+                
+                if st.button("Update Score", key=f"ko_update_{match['id']}", type="primary"):
+                    update_knockout_match_score(match['id'], s1, s2)
+                    st.success("Score updated!")
+                    st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # Close semi-finals
+    
+    # Connector
+    st.markdown('<div class="connector">➤</div>', unsafe_allow_html=True)
     
     # Final
-    with col3:
-        st.markdown("### Final")
-        final = knockout_df[knockout_df['stage'] == 'final']
-        if not final.empty:
-            final_match = final.iloc[0]
-            status = "🏆" if final_match['completed'] else "⏳"
+    final = knockout_df[knockout_df['stage'] == 'final']
+    if not final.empty:
+        final_match = final.iloc[0]
+        status = "🏆" if final_match['completed'] else "⏳"
+        
+        st.markdown(f'''
+        <div class="match-box final-box">
+            <div class="match-title">FINAL {status}</div>
+        ''', unsafe_allow_html=True)
+        
+        if final_match['team1'] == 'TBD':
+            st.markdown('<div style="text-align: center; color: white; padding: 2rem;">Awaiting Semi-Final Results</div>', unsafe_allow_html=True)
+        else:
+            # Get final team logos
+            final_logo1_path = f"team_logo/{final_match['team1'].lower()}.png"
+            if not os.path.exists(final_logo1_path):
+                final_logo1_path = f"team_logo/{final_match['team1'].lower()}.jpg"
             
-            if final_match['team1'] == 'TBD':
-                display_text = "Awaiting Semi-Final Results"
-                teams_display = "TBD vs TBD"
+            final_logo2_path = f"team_logo/{final_match['team2'].lower()}.png"
+            if not os.path.exists(final_logo2_path):
+                final_logo2_path = f"team_logo/{final_match['team2'].lower()}.jpg"
+            
+            # Final Team 1 logo HTML
+            if os.path.exists(final_logo1_path):
+                with open(final_logo1_path, "rb") as f:
+                    final_encoded1 = base64.b64encode(f.read()).decode()
+                    final_team1_logo = f'<img src="data:image/png;base64,{final_encoded1}" class="team-logo">'
             else:
-                score_display = f"{int(final_match['score1'])} - {int(final_match['score2'])}" if final_match['completed'] else "vs"
-                teams_display = f"{final_match['team1']} {score_display} {final_match['team2']}"
-                display_text = final_match['match_name']
+                final_team1_logo = '<div class="placeholder-logo">🏆</div>'
             
+            # Final Team 2 logo HTML
+            if os.path.exists(final_logo2_path):
+                with open(final_logo2_path, "rb") as f:
+                    final_encoded2 = base64.b64encode(f.read()).decode()
+                    final_team2_logo = f'<img src="data:image/png;base64,{final_encoded2}" class="team-logo">'
+            else:
+                final_team2_logo = '<div class="placeholder-logo">🏆</div>'
+            
+            # Single markdown for final
             st.markdown(f'''
-            <div class="bracket-match bracket-final pulse-animation">
-                <div style="font-weight: 800; margin-bottom: 1rem;color: #000000;">{display_text}</div>
-                <div style="font-size: 1.3rem;">{teams_display}</div>
-                <div style="margin-top: 1rem; font-size: 2rem;color: #000000;">{status}</div>
+            <div class="teams-container">
+                <div class="team-section">
+                    {final_team1_logo}
+                    <div class="team-name">{final_match["team1"]}</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-section">
+                    {final_team2_logo}
+                    <div class="team-name">{final_match["team2"]}</div>
+                </div>
+            </div>
+            <div class="scores-row">
+                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score1"])}</div>
+                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score2"])}</div>
             </div>
             ''', unsafe_allow_html=True)
-            
-            # Admin final score update
-            if st.session_state.admin_logged_in and not final_match['completed'] and final_match['team1'] != 'TBD':
-                with st.expander("Update Final"):
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}")
-                    with col_b:
-                        f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}")
-                    
-                    if st.button("Update Final Score", key=f"final_update_{final_match['id']}",type="primary"):
-                        update_knockout_match_score(final_match['id'], f1, f2)
-                        st.success("Final score updated!")
-                        time.sleep(1)  # Allow time for update to process
-                        st.rerun()
-                    else:
-                        st.error("Failed to update the final score. Please try again.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # Close final match-box
+        
+        # Admin final score update
+        if st.session_state.admin_logged_in and not final_match['completed'] and final_match['team1'] != 'TBD':
+            with st.expander("📝 Update Final Score"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}")
+                with col_b:
+                    f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}")
+                
+                if st.button("Update Final Score", key=f"final_update_{final_match['id']}", type="primary"):
+                    update_knockout_match_score(final_match['id'], f1, f2)
+                    st.success("Final score updated!")
+                    st.rerun()
     
-    # Tournament winner display
+    st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-layout
+    st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-container
+    
+    # Champion display
     if not final.empty and final.iloc[0]['completed']:
         final_match = final.iloc[0]
         winner = final_match['team1'] if final_match['score1'] > final_match['score2'] else final_match['team2']
+        
         st.markdown(f'''
-        <div style="text-align: center; margin-top: 3rem;">
-            <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); 
-                        padding: 2rem; border-radius: 20px; border: 3px solid #FF8F00;">
-                <h1 style="color: #1B5E20; font-size: 2.5rem; margin: 0;">🏆 TOURNAMENT CHAMPION 🏆</h1>
-                <h2 style="color: #1B5E20; font-size: 2rem; margin: 1rem 0;">{winner}</h2>
-            </div>
+        <div class="champion-banner">
+            <h1 style="color: #8B0000; font-size: 2.5rem; margin: 0;">🏆 CHAMPION 🏆</h1>
+            <h2 style="color: #8B0000; font-size: 2rem; margin: 1rem 0;">{winner}</h2>
         </div>
         ''', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+
 
 # Enhanced import function to handle Excel better
 def import_fixtures_from_excel(uploaded_file):
