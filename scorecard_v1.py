@@ -925,8 +925,503 @@ import os
 import base64
 # Complete the missing show_knockout_bracket function
 
+import os
+import base64
+import logging
+from pathlib import Path
+import streamlit as st
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_team_logo_base64(team_name):
+    """
+    Get team logo as base64 string with comprehensive logging and fallback options.
+    """
+    # Get the current working directory and script directory
+    current_dir = os.getcwd()
+    script_dir = Path(__file__).parent if '__file__' in globals() else Path('.')
+    
+    logger.info(f"Current working directory: {current_dir}")
+    logger.info(f"Script directory: {script_dir}")
+    
+    # Multiple possible paths to check
+    possible_paths = [
+        # Relative to current working directory
+        Path(current_dir) / "team_logo" / f"{team_name.lower()}.png",
+        Path(current_dir) / "team_logo" / f"{team_name.lower()}.jpg",
+        # Relative to script directory
+        script_dir / "team_logo" / f"{team_name.lower()}.png",
+        script_dir / "team_logo" / f"{team_name.lower()}.jpg",
+        # Direct relative paths
+        Path("team_logo") / f"{team_name.lower()}.png",
+        Path("team_logo") / f"{team_name.lower()}.jpg",
+        # Absolute paths (if team_logo is in root)
+        Path(".") / "team_logo" / f"{team_name.lower()}.png",
+        Path(".") / "team_logo" / f"{team_name.lower()}.jpg",
+    ]
+    
+    logger.info(f"Searching for logo for team: {team_name}")
+    
+    # List all files in team_logo directory if it exists
+    team_logo_dirs = [
+        Path(current_dir) / "team_logo",
+        script_dir / "team_logo",
+        Path("team_logo"),
+        Path(".") / "team_logo"
+    ]
+    
+    for logo_dir in team_logo_dirs:
+        if logo_dir.exists():
+            logger.info(f"Found team_logo directory: {logo_dir}")
+            try:
+                files = list(logo_dir.glob("*"))
+                logger.info(f"Files in {logo_dir}: {[f.name for f in files]}")
+            except Exception as e:
+                logger.error(f"Error listing files in {logo_dir}: {e}")
+        else:
+            logger.info(f"Directory does not exist: {logo_dir}")
+    
+    # Try each possible path
+    for path in possible_paths:
+        logger.info(f"Checking path: {path}")
+        try:
+            if path.exists() and path.is_file():
+                logger.info(f"Found logo at: {path}")
+                with open(path, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode()
+                    return f'<img src="data:image/png;base64,{encoded}" class="team-logo">'
+            else:
+                logger.info(f"Path does not exist or is not a file: {path}")
+        except Exception as e:
+            logger.error(f"Error reading {path}: {e}")
+    
+    # If no logo found, return placeholder
+    logger.warning(f"No logo found for team: {team_name}")
+    return '<div class="placeholder-logo">🏆</div>'
 
 def show_knockout_bracket():
+    st.subheader("🎯 Knockout Bracket")
+    
+    # Add debug information for admins
+    if st.session_state.get('admin_logged_in', False):
+        with st.expander("🔍 Debug Information"):
+            st.write("**Current Working Directory:**", os.getcwd())
+            st.write("**Script Directory:**", str(Path(__file__).parent if '__file__' in globals() else "Unknown"))
+            
+            # Check if team_logo directory exists
+            possible_dirs = [
+                Path(os.getcwd()) / "team_logo",
+                Path("team_logo"),
+                Path(".") / "team_logo"
+            ]
+            
+            for dir_path in possible_dirs:
+                if dir_path.exists():
+                    st.write(f"**Found team_logo at:** {dir_path}")
+                    try:
+                        files = list(dir_path.glob("*"))
+                        st.write(f"**Files:** {[f.name for f in files]}")
+                    except Exception as e:
+                        st.write(f"**Error listing files:** {e}")
+                    break
+            else:
+                st.warning("team_logo directory not found in any expected location")
+    
+    # Streamlined CSS with horizontal layout
+    st.markdown("""
+    <style>
+
+    .bracket-layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3rem;
+        flex-wrap: wrap;
+    }
+    
+    .semi-finals {
+        display: flex;
+        flex-direction: row;
+        gap: 4rem;
+    }
+    
+    .match-box {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        min-width: 280px;
+        border: 2px solid rgba(255,255,255,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .final-box {
+        background: linear-gradient(145deg, #dc143c, #ff1744);
+        border: 3px solid #ff4444;
+        box-shadow: 0 0 25px rgba(220, 20, 60, 0.7);
+        min-width: 280px;
+    }
+    
+    .final-box:hover {
+        box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
+    }
+    
+    .match-title {
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .teams-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 2rem;
+    }
+    
+    .team-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .team-logo {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        border: 2px solid rgba(255,255,255,0.2);
+        object-fit: cover;
+    }
+    
+    .team-name {
+        color: white;
+        font-weight: bold;
+        font-size: 1rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    }
+    
+    .scores-row {
+        display: flex;
+        justify-content: center;
+        gap: 4rem;
+        margin-top: 1rem;
+    }
+    
+    .vs-divider {
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        align-self: center;
+        margin: 0 1rem;
+    }
+    
+    .connector {
+        color: #ffd700;
+        font-size: 3rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        margin: 0 1rem;
+    }
+    
+    .champion-banner {
+        text-align: center;
+        margin-top: 2rem;
+        background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 3px solid #ff8c00;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+    
+    .placeholder-logo {
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.1);
+        border: 2px dashed rgba(255,255,255,0.3);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .team-score {
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        background: rgba(0,0,0,0.3);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        min-width: 40px;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Check if league stage is complete
+    matches_df = get_matches()
+    if matches_df.empty or len(matches_df[matches_df['completed'] == True]) < len(matches_df) * 0.8:
+        st.warning("⚠️ Complete more league matches to generate knockout bracket")
+        return
+    
+    # Generate bracket button (admin only)
+    if st.session_state.get('admin_logged_in', False):
+        if st.button("🔄 Generate Knockout Bracket", type="primary"):
+            generate_knockout_bracket()
+            st.success("Knockout bracket generated!")
+            st.rerun()
+    
+    knockout_df = get_knockout_matches()
+    if knockout_df.empty:
+        st.info("No knockout matches generated yet.")
+        return
+    
+    # Display bracket
+    st.markdown('<div class="bracket-layout">', unsafe_allow_html=True)
+    
+    # Semi-finals
+    st.markdown('<div class="semi-finals">', unsafe_allow_html=True)
+    
+    semis = knockout_df[knockout_df['stage'] == 'semi'].sort_values('id')
+    for i, (_, match) in enumerate(semis.iterrows()):
+        status = "✅" if match['completed'] else "⏳"
+        
+        # Get team logos using the new function
+        team1_logo = get_team_logo_base64(match['team1'])
+        team2_logo = get_team_logo_base64(match['team2'])
+        
+        # Single markdown with complete HTML structure
+        st.markdown(f'''
+        <div class="match-box">
+            <div class="match-title">Semi-Final {i+1} {status}</div>
+            <div class="teams-container">
+                <div class="team-section">
+                    {team1_logo}
+                    <div class="team-name">{match["team1"]}</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-section">
+                    {team2_logo}
+                    <div class="team-name">{match["team2"]}</div>
+                </div>
+            </div>
+            <div class="scores-row">
+                <div class="team-score">{"-" if not match['completed'] else int(match["score1"])}</div>
+                <div class="team-score">{"-" if not match['completed'] else int(match["score2"])}</div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        # Admin score update
+        if st.session_state.get('admin_logged_in', False) and not match['completed']:
+            with st.expander(f"📝 Update SF{i+1} Score"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    s1 = st.number_input(f"{match['team1']} Goals", 0, 20, key=f"ko_s1_{match['id']}")
+                with col_b:
+                    s2 = st.number_input(f"{match['team2']} Goals", 0, 20, key=f"ko_s2_{match['id']}")
+                
+                if st.button("Update Score", key=f"ko_update_{match['id']}", type="primary"):
+                    update_knockout_match_score(match['id'], s1, s2)
+                    st.success("Score updated!")
+                    st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # Close semi-finals
+    
+    # Connector
+    st.markdown('<div class="connector">➤</div>', unsafe_allow_html=True)
+    
+    # Final
+    final = knockout_df[knockout_df['stage'] == 'final']
+    if not final.empty:
+        final_match = final.iloc[0]
+        status = "🏆" if final_match['completed'] else "⏳"
+        
+        st.markdown(f'''
+        <div class="match-box final-box">
+            <div class="match-title">FINAL {status}</div>
+        ''', unsafe_allow_html=True)
+        
+        if final_match['team1'] == 'TBD':
+            st.markdown('<div style="text-align: center; color: white; padding: 2rem;">Awaiting Semi-Final Results</div>', unsafe_allow_html=True)
+        else:
+            # Get final team logos using the new function
+            final_team1_logo = get_team_logo_base64(final_match['team1'])
+            final_team2_logo = get_team_logo_base64(final_match['team2'])
+            
+            # Single markdown for final
+            st.markdown(f'''
+            <div class="teams-container">
+                <div class="team-section">
+                    {final_team1_logo}
+                    <div class="team-name">{final_match["team1"]}</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-section">
+                    {final_team2_logo}
+                    <div class="team-name">{final_match["team2"]}</div>
+                </div>
+            </div>
+            <div class="scores-row">
+                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score1"])}</div>
+                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score2"])}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # Close final match-box
+        
+        # Admin final score update
+        if st.session_state.get('admin_logged_in', False) and not final_match['completed'] and final_match['team1'] != 'TBD':
+            with st.expander("📝 Update Final Score"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}")
+                with col_b:
+                    f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}")
+                
+                if st.button("Update Final Score", key=f"final_update_{final_match['id']}", type="primary"):
+                    update_knockout_match_score(final_match['id'], f1, f2)
+                    st.success("Final score updated!")
+                    st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-layout
+    
+    # Champion display
+    if not final.empty and final.iloc[0]['completed']:
+        final_match = final.iloc[0]
+        winner = final_match['team1'] if final_match['score1'] > final_match['score2'] else final_match['team2']
+        
+        st.markdown(f'''
+        <div class="champion-banner">
+            <h1 style="color: #8B0000; font-size: 2.5rem; margin: 0;">🏆 CHAMPION 🏆</h1>
+            <h2 style="color: #8B0000; font-size: 2rem; margin: 1rem 0;">{winner}</h2>
+        </div>
+        ''', unsafe_allow_html=True)
+
+# Alternative method using st.image (add this as a backup option)
+def show_knockout_bracket_alt():
+    """
+    Alternative version using Streamlit's st.image instead of base64 embedding.
+    This might work better in some deployment environments.
+    """
+    st.subheader("🎯 Knockout Bracket (Alternative)")
+    
+    # Check if league stage is complete
+    matches_df = get_matches()
+    if matches_df.empty or len(matches_df[matches_df['completed'] == True]) < len(matches_df) * 0.8:
+        st.warning("⚠️ Complete more league matches to generate knockout bracket")
+        return
+    
+    knockout_df = get_knockout_matches()
+    if knockout_df.empty:
+        st.info("No knockout matches generated yet.")
+        return
+    
+    # Semi-finals using columns and st.image
+    st.subheader("Semi-Finals")
+    
+    semis = knockout_df[knockout_df['stage'] == 'semi'].sort_values('id')
+    for i, (_, match) in enumerate(semis.iterrows()):
+        st.write(f"**Semi-Final {i+1}** {'✅' if match['completed'] else '⏳'}")
+        
+        col1, col2, col3 = st.columns([2, 1, 2])
+        
+        with col1:
+            # Try to display team 1 logo
+            logo_paths = [
+                f"team_logo/{match['team1'].lower()}.png",
+                f"team_logo/{match['team1'].lower()}.jpg",
+                f"./team_logo/{match['team1'].lower()}.png",
+                f"./team_logo/{match['team1'].lower()}.jpg"
+            ]
+            
+            logo_displayed = False
+            for path in logo_paths:
+                try:
+                    if os.path.exists(path):
+                        st.image(path, width=100)
+                        logo_displayed = True
+                        break
+                except Exception as e:
+                    logger.error(f"Error displaying image {path}: {e}")
+            
+            if not logo_displayed:
+                st.write("🏆")  # Placeholder
+            
+            st.write(f"**{match['team1']}**")
+            st.write(f"Score: {'-' if not match['completed'] else int(match['score1'])}")
+        
+        with col2:
+            st.write("**VS**")
+        
+        with col3:
+            # Try to display team 2 logo
+            logo_paths = [
+                f"team_logo/{match['team2'].lower()}.png",
+                f"team_logo/{match['team2'].lower()}.jpg",
+                f"./team_logo/{match['team2'].lower()}.png",
+                f"./team_logo/{match['team2'].lower()}.jpg"
+            ]
+            
+            logo_displayed = False
+            for path in logo_paths:
+                try:
+                    if os.path.exists(path):
+                        st.image(path, width=100)
+                        logo_displayed = True
+                        break
+                except Exception as e:
+                    logger.error(f"Error displaying image {path}: {e}")
+            
+            if not logo_displayed:
+                st.write("🏆")  # Placeholder
+            
+            st.write(f"**{match['team2']}**")
+            st.write(f"Score: {'-' if not match['completed'] else int(match['score2'])}")
+        
+        st.divider()
+    
+    # Final
+    final = knockout_df[knockout_df['stage'] == 'final']
+    if not final.empty:
+        final_match = final.iloc[0]
+        st.subheader(f"Final {'🏆' if final_match['completed'] else '⏳'}")
+        
+        if final_match['team1'] != 'TBD':
+            col1, col2, col3 = st.columns([2, 1, 2])
+            
+            with col1:
+                st.write(f"**{final_match['team1']}**")
+                st.write(f"Score: {'-' if not final_match['completed'] else int(final_match['score1'])}")
+            
+            with col2:
+                st.write("**VS**")
+            
+            with col3:
+                st.write(f"**{final_match['team2']}**")
+                st.write(f"Score: {'-' if not final_match['completed'] else int(final_match['score2'])}")
+        else:
+            st.info("Awaiting Semi-Final Results")
+#############################################################################
+
+
+
+
+
+
+
+
+
+
+def show_knockout_brackets():
     st.subheader("🎯 Knockout Bracket")
     
     # Streamlined CSS with horizontal layout
