@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 # Configuration
-ADMIN_PASSWORD = "admin123"
+admin_password = st.secrets["ADMIN_PASSWORD"]
 TOURNAMENT_NAME = "IGNITE 2025"
 
 # Initialize database
