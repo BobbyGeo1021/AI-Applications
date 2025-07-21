@@ -949,17 +949,17 @@ def get_team_logo_base64(team_name):
     # Multiple possible paths to check
     possible_paths = [
         # Relative to current working directory
-        Path(current_dir) / "team_logo" / f"{team_name.lower()}.png",
-        Path(current_dir) / "team_logo" / f"{team_name.lower()}.jpg",
+        Path(current_dir) / "team_logo" / f"{team_name}.png",
+        Path(current_dir) / "team_logo" / f"{team_name}.jpg",
         # Relative to script directory
-        script_dir / "team_logo" / f"{team_name.lower()}.png",
-        script_dir / "team_logo" / f"{team_name.lower()}.jpg",
+        script_dir / "team_logo" / f"{team_name}.png",
+        script_dir / "team_logo" / f"{team_name}.jpg",
         # Direct relative paths
-        Path("team_logo") / f"{team_name.lower()}.png",
-        Path("team_logo") / f"{team_name.lower()}.jpg",
+        Path("team_logo") / f"{team_name}.png",
+        Path("team_logo") / f"{team_name}.jpg",
         # Absolute paths (if team_logo is in root)
-        Path(".") / "team_logo" / f"{team_name.lower()}.png",
-        Path(".") / "team_logo" / f"{team_name.lower()}.jpg",
+        Path(".") / "team_logo" / f"{team_name}.png",
+        Path(".") / "team_logo" / f"{team_name}.jpg",
     ]
     
     logger.info(f"Searching for logo for team: {team_name}")
