@@ -1504,8 +1504,8 @@ def show_knockout_bracket():
         
         st.markdown(f'''
         <div class="champion-banner">
-            <h1 style="color: #8B0000; font-size: 2.5rem; margin: 0;">🏆 CHAMPION 🏆</h1>
-            <h2 style="color: #8B0000; font-size: 2rem; margin: 1rem 0;">{winner}</h2>
+            <h1 style="color: #8B0000; font-size: 1.7rem; margin: 0;">🏆 CHAMPION 🏆</h1>
+            <h2 style="color: #8B0000; font-size: 1.5rem; margin: 1rem 0;">{winner}</h2>
         </div>
         ''', unsafe_allow_html=True)
 
