@@ -399,32 +399,7 @@ def update_knockout_match_score(match_id, score1, score2):
     conn.close()
     return True
 
-# def update_knockout_match_scores(match_id, score1, score2):
-#     conn = sqlite3.connect('tournament.db')
-#     cursor = conn.cursor()
-    
-#     # Debug: Check current state
-#     cursor.execute("SELECT * FROM knockout_matches WHERE id = ?", (match_id,))
-#     before_update = cursor.fetchone()
-#     print(f"Before update: {before_update}")
-    
-#     # Update knockout match - ensure scores are integers
-#     cursor.execute('''
-#         UPDATE knockout_matches 
-#         SET score1 = ?, score2 = ?, completed = 1 
-#         WHERE id = ?
-#     ''', (int(score1), int(score2), match_id))
-    
-#     print(f"Rows affected: {cursor.rowcount}")
-    
-#     # Verify the update worked
-#     cursor.execute("SELECT * FROM knockout_matches WHERE id = ?", (match_id,))
-#     after_update = cursor.fetchone()
-#     print(f"After update: {after_update}")
-    
-#     conn.commit()
-#     conn.close()
-#     return True
+
 # Streamlit app
 def main():
     st.set_page_config(
@@ -724,10 +699,37 @@ def main():
     image_path = "assets/logo.png"  # Update this path to your image location
     img_base64 = img_to_base64(image_path)
 
+
+    sponsor_path = "assets/ASKGEO.jpg"
+    sponsor = img_to_base64(sponsor_path)
+
+    sponsor_path_2 = "assets/sponsor_2.jpg"
+    sponsor_2 = img_to_base64(sponsor_path_2)
+    
+    sponsor_path_3 = "assets/sponsor_3.jpg"
+    sponsor_3 = img_to_base64(sponsor_path_3)
+
+    
+    # Main Header with Logo
     st.markdown(f'''
 <div class="main-header floating-animation">
-    <img src="data:image/png;base64,{img_base64}" alt="Tournament Logo" 
-        style="width: 90%; height: auto; display: block; margin: 0 auto; object-fit: contain;">
+    <img src="data:image/png;base64,{img_base64}" alt="Tournament Logo"
+         style="width: 90%; height: auto; display: block; margin: 0 auto; object-fit: contain;">
+</div>
+''', unsafe_allow_html=True)
+
+    
+    st.markdown(f'''
+<div style="display: flex; justify-content: center; gap: 2%; margin-top: -1.2rem; margin-bottom: 1.5rem;">
+    <a href="https://www.askgeo.in" target="_blank" class="floating-animation" style="width: 44%; padding: 5px; border: 3px solid orange; border-radius: 10px; background-color: black; box-shadow: 0 0 15px red; text-align: center; text-decoration: none;">
+        <img src="data:image/png;base64,{sponsor}" style="width: 100%; height: 60px; object-fit: contain;">
+    </a>
+    <a href="https://www.shreesaidevelopers.in/" target="_blank" class="floating-animation" style="width: 44%; padding: 5px; border: 3px solid orange; border-radius: 10px; background-color: black; box-shadow: 0 0 15px red; text-align: center; text-decoration: none;">
+        <img src="data:image/png;base64,{sponsor_2}" style="width: 100%; height: 60px; object-fit: contain;">
+    </a>
+    <a href="https://grandcoolengg.com/" target="_blank" class="floating-animation" style="width: 44%; padding: 5px; border: 3px solid orange; border-radius: 10px; background-color: black; box-shadow: 0 0 15px red; text-align: center; text-decoration: none;">
+        <img src="data:image/png;base64,{sponsor_3}" style="width: 100%; height: 60px; object-fit: contain;">
+    </a>
 </div>
 ''', unsafe_allow_html=True)
     # Progress indicator
@@ -1071,7 +1073,13 @@ def show_fixtures():
                 <div style="background: #FFF3E0; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #FF9800;">
                     <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}</div>
                     <div style="text-align: center; font-size: 0.9rem;color: #000000;">
-                        {match['team1']}  <strong><span style="color: #FF9800; margin: 0 7px;">  vs  </span></strong>  {match['team2']} ⏳
+                            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 300px; margin: 0 auto;">
+            <span style="flex: 1; text-align: center;">{match['team1']}</span>
+            <span style="font-weight: bold; padding: 0 15px; color: #000000;">vs</span>
+            <span style="flex: 1; text-align: center;">{match['team2']}</span>
+                       ⏳        </div>
+        <div style="margin-top: 4px; font-size: 1rem; font-weight: bold;">
+            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 200px; margin: 0 auto;">
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
