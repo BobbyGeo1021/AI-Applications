@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 # Configuration
-ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
+ADMIN_PASSWORD = "admin123"
 TOURNAMENT_NAME = "IGNITE 2025"
 
 # Initialize database
@@ -147,6 +147,86 @@ def import_fixtures_from_excel(uploaded_file):
     except Exception as e:
         return False, f"Error importing fixtures: {str(e)}"
 
+
+def update_knockout_match_score(match_id, score1, score2):
+    conn = sqlite3.connect('tournament.db')
+    cursor = conn.cursor()
+    
+    try:
+        # Update knockout match
+        cursor.execute('''
+            UPDATE knockout_matches SET score1 = ?, score2 = ?, completed = TRUE WHERE id = ?
+        ''', (score1, score2, match_id))
+        
+        # Verify the update worked
+        if cursor.rowcount == 0:
+            conn.close()
+            return False
+        
+        # Get match details to determine winner
+        cursor.execute("SELECT match_name, team1, team2, stage FROM knockout_matches WHERE id = ?", (match_id,))
+        match_data = cursor.fetchone()
+        
+        if match_data:
+            match_name, team1, team2, stage = match_data
+            winner = team1 if score1 > score2 else team2
+            
+            # Update final if this is a semi-final
+            if stage == "semi":
+                cursor.execute("SELECT COUNT(*) FROM knockout_matches WHERE stage = 'semi' AND completed = TRUE")
+                completed_semis = cursor.fetchone()[0]
+                
+                if completed_semis == 2:
+                    # Both semis completed, update final
+                    cursor.execute('''
+                        SELECT team1, team2, score1, score2 FROM knockout_matches 
+                        WHERE stage = 'semi' AND completed = TRUE ORDER BY id
+                    ''')
+                    semi_results = cursor.fetchall()
+                    
+                    finalists = []
+                    for t1, t2, s1, s2 in semi_results:
+                        finalists.append(t1 if s1 > s2 else t2)
+                    
+                    if len(finalists) == 2:
+                        cursor.execute('''
+                            UPDATE knockout_matches SET team1 = ?, team2 = ?, completed = FALSE 
+                            WHERE stage = 'final'
+                        ''', (finalists[0], finalists[1]))
+            
+            # Handle final match completion
+            elif stage == "final":
+                # Create winner record
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS tournament_winner (
+                        id INTEGER PRIMARY KEY,
+                        team_name TEXT,
+                        final_score1 INTEGER,
+                        final_score2 INTEGER,
+                        runner_up TEXT,
+                        date_completed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # Clear any existing winner (in case of re-run)
+                cursor.execute("DELETE FROM tournament_winner")
+                
+                # Insert tournament winner
+                runner_up = team2 if score1 > score2 else team1
+                cursor.execute('''
+                    INSERT INTO tournament_winner (team_name, final_score1, final_score2, runner_up)
+                    VALUES (?, ?, ?, ?)
+                ''', (winner, score1, score2, runner_up))
+        
+        conn.commit()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        print(f"Error updating knockout match: {e}")
+        return False
 def update_match_score(match_id, score1, score2):
     conn = sqlite3.connect('tournament.db')
     cursor = conn.cursor()
@@ -193,6 +273,7 @@ def update_team_stats(cursor, team_name, goals_for, goals_against, points, match
             matches_played = matches_played + ?
         WHERE name = ?
     ''', (goals_for, goals_against, points, matches_played, team_name))
+    
 
 def get_points(score1, score2):
     if score1 > score2:
@@ -218,20 +299,20 @@ def generate_knockout_bracket():
     if len(top_4) >= 4:
         # Semi-finals: 1st vs 4th, 2nd vs 3rd
         cursor.execute('''
-            INSERT INTO knockout_matches (match_name, team1, team2, stage)
-            VALUES (?, ?, ?, ?)
-        ''', ("Semi-Final 1", top_4.iloc[0]['name'], top_4.iloc[3]['name'], "semi"))
+            INSERT INTO knockout_matches (match_name, team1, team2, stage,score1, score2, completed)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', ("Semi-Final 1", top_4.iloc[0]['name'], top_4.iloc[3]['name'], "semi", 0, 0, False))
         
         cursor.execute('''
-            INSERT INTO knockout_matches (match_name, team1, team2, stage)
-            VALUES (?, ?, ?, ?)
-        ''', ("Semi-Final 2", top_4.iloc[1]['name'], top_4.iloc[2]['name'], "semi"))
+            INSERT INTO knockout_matches (match_name, team1, team2, stage,score1, score2, completed)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', ("Semi-Final 2", top_4.iloc[1]['name'], top_4.iloc[2]['name'], "semi", 0, 0, False))
         
         # Final (TBD until semis are completed)
         cursor.execute('''
-            INSERT INTO knockout_matches (match_name, team1, team2, stage)
-            VALUES (?, ?, ?, ?)
-        ''', ("Final", "TBD", "TBD", "final"))
+            INSERT INTO knockout_matches (match_name, team1, team2, stage, score1, score2, completed)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', ("Final", "TBD", "TBD", "final",0,0,False))
     
     conn.commit()
     conn.close()
@@ -242,6 +323,20 @@ def get_tournament_progress():
         return 0
     completed = len(matches_df[matches_df['completed'] == True])
     return (completed / len(matches_df)) * 100
+
+
+def update_final_score(match_id, score1, score2):
+    import sqlite3
+    conn = sqlite3.connect('tournament.db')
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE knockout_matches SET score1 = ?, score2 = ?, completed = 1 WHERE id = 3;",
+        (score1, score2)
+    )
+    conn.commit()
+    conn.close()
+    return True
 
 def update_knockout_match_score(match_id, score1, score2):
     conn = sqlite3.connect('tournament.db')
@@ -281,18 +376,62 @@ def update_knockout_match_score(match_id, score1, score2):
                     cursor.execute('''
                         UPDATE knockout_matches SET team1 = ?, team2 = ? WHERE stage = 'final'
                     ''', (finalists[0], finalists[1]))
+        # Handle final match completion - insert winner into tournament_winner table
+        elif stage == "final":
+            # Create winner record
+            cursor.execute('''
+                UPDATE knockout_matches SET team1 = ?, team2 = ? WHERE stage = 'final'
+                )
+            ''',(finalists[0], finalists[1]))
+            
+            # # Clear any existing winner (in case of re-run)
+            # cursor.execute("DELETE FROM tournament_winner")
+            
+            # # Insert tournament winner
+            # runner_up = team2 if score1 > score2 else team1
+            # cursor.execute('''
+            #     INSERT INTO tournament_winner (team_name, final_score1, final_score2, runner_up)
+            #     VALUES (?, ?, ?, ?)
+            # ''', (winner, score1, score2, runner_up))
+
     
     conn.commit()
     conn.close()
     return True
 
+# def update_knockout_match_scores(match_id, score1, score2):
+#     conn = sqlite3.connect('tournament.db')
+#     cursor = conn.cursor()
+    
+#     # Debug: Check current state
+#     cursor.execute("SELECT * FROM knockout_matches WHERE id = ?", (match_id,))
+#     before_update = cursor.fetchone()
+#     print(f"Before update: {before_update}")
+    
+#     # Update knockout match - ensure scores are integers
+#     cursor.execute('''
+#         UPDATE knockout_matches 
+#         SET score1 = ?, score2 = ?, completed = 1 
+#         WHERE id = ?
+#     ''', (int(score1), int(score2), match_id))
+    
+#     print(f"Rows affected: {cursor.rowcount}")
+    
+#     # Verify the update worked
+#     cursor.execute("SELECT * FROM knockout_matches WHERE id = ?", (match_id,))
+#     after_update = cursor.fetchone()
+#     print(f"After update: {after_update}")
+    
+#     conn.commit()
+#     conn.close()
+#     return True
 # Streamlit app
 def main():
     st.set_page_config(
         page_title=TOURNAMENT_NAME,
         page_icon="⚽",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="collapsed"
     )
     
     # Enhanced Football Theme CSS
@@ -521,6 +660,11 @@ def main():
     # Header
     st.markdown("""
 <style>
+                
+.stApp {
+    background-color: black;
+}
+                
 .main-header {
     font-size: 36px;
     text-align: center;
@@ -618,14 +762,10 @@ def main():
         if st.sidebar.button("Logout", type="secondary"):
             st.session_state.admin_logged_in = False
             st.rerun()
-    
+    tab1, tab2, tab3 = st.tabs(["🏆 Scoreboard", "📅 Fixtures", "🎯 Knockout Bracket"])
+
     # Navigation
     st.sidebar.markdown("---")
-    page = st.sidebar.selectbox(
-        "📍 Navigate to:",
-        ["🏆 Scoreboard", "📅 Fixtures", "🎯 Knockout Bracket"],
-        index=0
-    )
     
     # Admin file upload
     if st.session_state.admin_logged_in:
@@ -642,12 +782,11 @@ def main():
     if st.session_state.admin_logged_in:
         admin_clear_all_data()
     
-    # Route to pages
-    if page == "🏆 Scoreboard":
+    with tab1:
         show_scoreboard()
-    elif page == "📅 Fixtures":
+    with tab2:  
         show_fixtures()
-    elif page == "🎯 Knockout Bracket":
+    with tab3:
         show_knockout_bracket()
 
 def show_scoreboard():
@@ -900,14 +1039,31 @@ def show_fixtures():
             for _, match in completed_matches.iterrows():
                 result_emoji = "🏆" if match['score1'] != match['score2'] else "🤝"
                 st.markdown(f'''
-                <div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
-                    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}</div>
-                    <div style="text-align: center; font-size: 0.9rem;color: #000000;">
-                        {match['team1']} <strong><span style="margin: 0 9px;">{int(match['score1'])} - {int(match['score2'])}</span></strong> {match['team2']} {result_emoji}
-                    </div>
-                </div>
-                ''', unsafe_allow_html=True)
-        
+<div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
+    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">
+        {match['match_name']}
+    </div>
+    <div style="text-align: center; font-size: 0.9rem; color: #000000;">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 300px; margin: 0 auto;">
+            <span style="flex: 1; text-align: center;">{match['team1']}</span>
+            <span style="font-weight: bold; padding: 0 15px; color: #000000;">vs</span>
+            <span style="flex: 1; text-align: center;">{match['team2']}</span>
+        </div>
+        <div style="margin-top: 4px; font-size: 1rem; font-weight: bold;">
+            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 200px; margin: 0 auto;">
+                <span>{int(match['score1'])}</span>
+                <span style="font-weight: bold;">-</span>
+                <span>{int(match['score2'])}</span>
+            </div>
+            {result_emoji}
+        </div>
+    </div>
+</div>
+''', unsafe_allow_html=True)
+
+
+
+            
         if not pending_matches.empty:
             st.subheader("⏳ Upcoming Matches")
             for _, match in pending_matches.iterrows():
@@ -949,17 +1105,17 @@ def get_team_logo_base64(team_name):
     # Multiple possible paths to check
     possible_paths = [
         # Relative to current working directory
-        Path(current_dir) / "team_logo" / f"{team_name}.png",
-        Path(current_dir) / "team_logo" / f"{team_name}.jpg",
+        Path(current_dir) / "team_logo" / f"{team_name.lower()}.png",
+        Path(current_dir) / "team_logo" / f"{team_name.lower()}.jpg",
         # Relative to script directory
-        script_dir / "team_logo" / f"{team_name}.png",
-        script_dir / "team_logo" / f"{team_name}.jpg",
+        script_dir / "team_logo" / f"{team_name.lower()}.png",
+        script_dir / "team_logo" / f"{team_name.lower()}.jpg",
         # Direct relative paths
-        Path("team_logo") / f"{team_name}.png",
-        Path("team_logo") / f"{team_name}.jpg",
+        Path("team_logo") / f"{team_name.lower()}.png",
+        Path("team_logo") / f"{team_name.lower()}.jpg",
         # Absolute paths (if team_logo is in root)
-        Path(".") / "team_logo" / f"{team_name}.png",
-        Path(".") / "team_logo" / f"{team_name}.jpg",
+        Path(".") / "team_logo" / f"{team_name.lower()}.png",
+        Path(".") / "team_logo" / f"{team_name.lower()}.jpg",
     ]
     
     logger.info(f"Searching for logo for team: {team_name}")
@@ -1057,12 +1213,42 @@ def show_knockout_bracket():
         margin-bottom: 2rem;
     }
     
-    .final-box {
-        background: linear-gradient(145deg, #dc143c, #ff1744);
-        border: 3px solid #ff4444;
-        box-shadow: 0 0 25px rgba(220, 20, 60, 0.7);
-        min-width: 280px;
-    }
+
+
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Metal+Mania&family=Nosifer&display=swap');
+
+
+.final-box {
+    background: linear-gradient(145deg, #8B0000, #4B0000, #2B0000);
+    border: 4px solid #CC0000;
+    box-shadow: 
+        0 0 25px rgba(139, 0, 0, 0.9),
+        inset 0 0 15px rgba(75, 0, 0, 0.7);
+    animation: bloodPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes bloodPulse {
+    0% { box-shadow: 0 0 25px rgba(139, 0, 0, 0.9); }
+    100% { box-shadow: 0 0 50px rgba(204, 0, 0, 1); }
+}
+
+
+.final-box .scary-title {
+    color: #FF0000 !important;
+    font-family: 'Impact', 'Arial Black', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 3.5rem !important;
+    text-shadow: 
+        3px 3px 0px #000000,
+        -3px -3px 0px #000000,
+        0px 0px 15px #FF0000 !important;
+    letter-spacing: 3px !important;
+    animation: flicker 1.5s ease-in-out infinite alternate !important;
+}
+@keyframes flicker {
+    0% { opacity: 0.9; }
+    100% { opacity: 1; text-shadow: 3px 3px 0px #000000, -3px -3px 0px #000000, 0px 0px 25px #FF0000; }
+}
     
     .final-box:hover {
         box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
@@ -1073,7 +1259,7 @@ def show_knockout_bracket():
         font-weight: bold;
         text-align: center;
         margin-bottom: 1.5rem;
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
@@ -1237,9 +1423,10 @@ def show_knockout_bracket():
     st.markdown('</div>', unsafe_allow_html=True)  # Close semi-finals
     
     # Connector
-    st.markdown('<div class="connector">➤</div>', unsafe_allow_html=True)
+    #st.markdown('<div class="connector">➤</div>', unsafe_allow_html=True)
     
     # Final
+    knockout_df = get_knockout_matches()
     final = knockout_df[knockout_df['stage'] == 'final']
     if not final.empty:
         final_match = final.iloc[0]
@@ -1278,20 +1465,36 @@ def show_knockout_bracket():
         
         st.markdown('</div>', unsafe_allow_html=True)  # Close final match-box
         
-        # Admin final score update
+        # # Admin final score update
+        # if st.session_state.get('admin_logged_in', False) and not final_match['completed'] and final_match['team1'] != 'TBD':
+        #     with st.expander("📝 Update Final Score"):
+        #         col_a, col_b = st.columns(2)
+        #         with col_a:
+        #             f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}", value=0)
+        #         with col_b:
+        #             f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}", value=0)
+                
+        #         if st.button("Update Final Score", key=f"final_update_{final_match['id']}", type="primary"):
+        #             update_knockout_match_score(final_match['id'], f1, f2)
+        #             st.success("Final score updated!")
+        #             st.rerun()
+    
         if st.session_state.get('admin_logged_in', False) and not final_match['completed'] and final_match['team1'] != 'TBD':
             with st.expander("📝 Update Final Score"):
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}")
+                    f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}", value=0)
                 with col_b:
-                    f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}")
+                    f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}", value=0)
                 
                 if st.button("Update Final Score", key=f"final_update_{final_match['id']}", type="primary"):
-                    update_knockout_match_score(final_match['id'], f1, f2)
-                    st.success("Final score updated!")
-                    st.rerun()
-    
+                    print("Updating final score with values:", f1, f2)
+                    print("Match-ID",final_match['id'])
+                    if update_final_score(final_match['id'], f1, f2):
+                        st.success("Final score updated!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to update final score!")
     st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-layout
     
     # Champion display
@@ -1306,7 +1509,7 @@ def show_knockout_bracket():
         </div>
         ''', unsafe_allow_html=True)
 
-# Alternative method using st.image (add this as a backup option)
+# Alternative method using st.image 
 def show_knockout_bracket_alt():
     """
     Alternative version using Streamlit's st.image instead of base64 embedding.
@@ -1413,337 +1616,6 @@ def show_knockout_bracket_alt():
 #############################################################################
 
 
-
-
-
-
-
-
-
-
-def show_knockout_brackets():
-    st.subheader("🎯 Knockout Bracket")
-    
-    # Streamlined CSS with horizontal layout
-    st.markdown("""
-    <style>
-
-    .bracket-layout {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 3rem;
-        flex-wrap: wrap;
-    }
-    
-    .semi-finals {
-        display: flex;
-        flex-direction: row;
-        gap: 4rem;
-    }
-    
-    .match-box {
-        background: rgba(255,255,255,0.05);
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        min-width: 280px;
-        border: 2px solid rgba(255,255,255,0.1);
-        margin-bottom: 2rem;
-    }
-    
-    .final-box {
-        background: linear-gradient(145deg, #dc143c, #ff1744);
-        border: 3px solid #ff4444;
-        box-shadow: 0 0 25px rgba(220, 20, 60, 0.7);
-        min-width: 280px;
-    }
-    
-    .final-box:hover {
-        box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
-    }
-    
-    .match-title {
-        color: white;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 1.5rem;
-        font-size: 1.2rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    }
-    
-    .teams-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 1rem;
-        gap: 2rem;
-    }
-    
-    .team-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .team-logo {
-        width: 100px;
-        height: 100px;
-        border-radius: 8px;
-        border: 2px solid rgba(255,255,255,0.2);
-    }
-    
-    .team-name {
-        color: white;
-        font-weight: bold;
-        font-size: 1rem;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-    }
-    
-    .scores-row {
-        display: flex;
-        justify-content: center;
-        gap: 4rem;
-        margin-top: 1rem;
-    }
-    
-    .vs-divider {
-        color: #ffd700;
-        font-weight: bold;
-        font-size: 1.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-        align-self: center;
-        margin: 0 1rem;
-    }
-    
-    .connector {
-        color: #ffd700;
-        font-size: 3rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-        margin: 0 1rem;
-    }
-    
-    .champion-banner {
-        text-align: center;
-        margin-top: 2rem;
-        background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
-        padding: 2rem;
-        border-radius: 20px;
-        border: 3px solid #ff8c00;
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
-    }
-    
-    .placeholder-logo {
-        width: 100px;
-        height: 100px;
-        background: rgba(255,255,255,0.1);
-        border: 2px dashed rgba(255,255,255,0.3);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-    }
-    
-    .team-score {
-        color: #ffd700;
-        font-weight: bold;
-        font-size: 1.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-        background: rgba(0,0,0,0.3);
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        min-width: 40px;
-        text-align: center;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Check if league stage is complete
-    matches_df = get_matches()
-    if matches_df.empty or len(matches_df[matches_df['completed'] == True]) < len(matches_df) * 0.8:
-        st.warning("⚠️ Complete more league matches to generate knockout bracket")
-        return
-    
-    # Generate bracket button (admin only)
-    if st.session_state.admin_logged_in:
-        if st.button("🔄 Generate Knockout Bracket", type="primary"):
-            generate_knockout_bracket()
-            st.success("Knockout bracket generated!")
-            st.rerun()
-    
-    knockout_df = get_knockout_matches()
-    if knockout_df.empty:
-        st.info("No knockout matches generated yet.")
-        return
-    
-    # Display bracket
-    #st.markdown('<div class="bracket-container">', unsafe_allow_html=True)
-    st.markdown('<div class="bracket-layout">', unsafe_allow_html=True)
-    
-    # Semi-finals
-    st.markdown('<div class="semi-finals">', unsafe_allow_html=True)
-    
-    semis = knockout_df[knockout_df['stage'] == 'semi'].sort_values('id')
-    for i, (_, match) in enumerate(semis.iterrows()):
-        status = "✅" if match['completed'] else "⏳"
-        
-        # Get team logos
-        logo1_path = f"team_logo/{match['team1'].lower()}.png"
-        if not os.path.exists(logo1_path):
-            logo1_path = f"team_logo/{match['team1'].lower()}.jpg"
-        
-        logo2_path = f"team_logo/{match['team2'].lower()}.png"
-        if not os.path.exists(logo2_path):
-            logo2_path = f"team_logo/{match['team2'].lower()}.jpg"
-        
-        # Team 1 logo HTML
-        if os.path.exists(logo1_path):
-            with open(logo1_path, "rb") as f:
-                import base64
-                encoded1 = base64.b64encode(f.read()).decode()
-                team1_logo = f'<img src="data:image/png;base64,{encoded1}" class="team-logo">'
-        else:
-            team1_logo = '<div class="placeholder-logo">🏆</div>'
-        
-        # Team 2 logo HTML
-        if os.path.exists(logo2_path):
-            with open(logo2_path, "rb") as f:
-                encoded2 = base64.b64encode(f.read()).decode()
-                team2_logo = f'<img src="data:image/png;base64,{encoded2}" class="team-logo">'
-        else:
-            team2_logo = '<div class="placeholder-logo">🏆</div>'
-        
-        # Single markdown with complete HTML structure
-        st.markdown(f'''
-        <div class="match-box">
-            <div class="match-title">Semi-Final {i+1} {status}</div>
-            <div class="teams-container">
-                <div class="team-section">
-                    {team1_logo}
-                    <div class="team-name">{match["team1"]}</div>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team-section">
-                    {team2_logo}
-                    <div class="team-name">{match["team2"]}</div>
-                </div>
-            </div>
-            <div class="scores-row">
-                <div class="team-score">{"-" if not match['completed'] else int(match["score1"])}</div>
-                <div class="team-score">{"-" if not match['completed'] else int(match["score2"])}</div>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
-        
-        # Admin score update
-        if st.session_state.admin_logged_in and not match['completed']:
-            with st.expander(f"📝 Update SF{i+1} Score"):
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    s1 = st.number_input(f"{match['team1']} Goals", 0, 20, key=f"ko_s1_{match['id']}")
-                with col_b:
-                    s2 = st.number_input(f"{match['team2']} Goals", 0, 20, key=f"ko_s2_{match['id']}")
-                
-                if st.button("Update Score", key=f"ko_update_{match['id']}", type="primary"):
-                    update_knockout_match_score(match['id'], s1, s2)
-                    st.success("Score updated!")
-                    st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close semi-finals
-    
-    # Connector
-    st.markdown('<div class="connector">➤</div>', unsafe_allow_html=True)
-    
-    # Final
-    final = knockout_df[knockout_df['stage'] == 'final']
-    if not final.empty:
-        final_match = final.iloc[0]
-        status = "🏆" if final_match['completed'] else "⏳"
-        
-        st.markdown(f'''
-        <div class="match-box final-box">
-            <div class="match-title">FINAL {status}</div>
-        ''', unsafe_allow_html=True)
-        
-        if final_match['team1'] == 'TBD':
-            st.markdown('<div style="text-align: center; color: white; padding: 2rem;">Awaiting Semi-Final Results</div>', unsafe_allow_html=True)
-        else:
-            # Get final team logos
-            final_logo1_path = f"team_logo/{final_match['team1'].lower()}.png"
-            if not os.path.exists(final_logo1_path):
-                final_logo1_path = f"team_logo/{final_match['team1'].lower()}.jpg"
-            
-            final_logo2_path = f"team_logo/{final_match['team2'].lower()}.png"
-            if not os.path.exists(final_logo2_path):
-                final_logo2_path = f"team_logo/{final_match['team2'].lower()}.jpg"
-            
-            # Final Team 1 logo HTML
-            if os.path.exists(final_logo1_path):
-                with open(final_logo1_path, "rb") as f:
-                    final_encoded1 = base64.b64encode(f.read()).decode()
-                    final_team1_logo = f'<img src="data:image/png;base64,{final_encoded1}" class="team-logo">'
-            else:
-                final_team1_logo = '<div class="placeholder-logo">🏆</div>'
-            
-            # Final Team 2 logo HTML
-            if os.path.exists(final_logo2_path):
-                with open(final_logo2_path, "rb") as f:
-                    final_encoded2 = base64.b64encode(f.read()).decode()
-                    final_team2_logo = f'<img src="data:image/png;base64,{final_encoded2}" class="team-logo">'
-            else:
-                final_team2_logo = '<div class="placeholder-logo">🏆</div>'
-            
-            # Single markdown for final
-            st.markdown(f'''
-            <div class="teams-container">
-                <div class="team-section">
-                    {final_team1_logo}
-                    <div class="team-name">{final_match["team1"]}</div>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team-section">
-                    {final_team2_logo}
-                    <div class="team-name">{final_match["team2"]}</div>
-                </div>
-            </div>
-            <div class="scores-row">
-                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score1"])}</div>
-                <div class="team-score">{"-" if not final_match['completed'] else int(final_match["score2"])}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)  # Close final match-box
-        
-        # Admin final score update
-        if st.session_state.admin_logged_in and not final_match['completed'] and final_match['team1'] != 'TBD':
-            with st.expander("📝 Update Final Score"):
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    f1 = st.number_input(f"{final_match['team1']} Goals", 0, 20, key=f"final_s1_{final_match['id']}")
-                with col_b:
-                    f2 = st.number_input(f"{final_match['team2']} Goals", 0, 20, key=f"final_s2_{final_match['id']}")
-                
-                if st.button("Update Final Score", key=f"final_update_{final_match['id']}", type="primary"):
-                    update_knockout_match_score(final_match['id'], f1, f2)
-                    st.success("Final score updated!")
-                    st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-layout
-    st.markdown('</div>', unsafe_allow_html=True)  # Close bracket-container
-    
-    # Champion display
-    if not final.empty and final.iloc[0]['completed']:
-        final_match = final.iloc[0]
-        winner = final_match['team1'] if final_match['score1'] > final_match['score2'] else final_match['team2']
-        
-        st.markdown(f'''
-        <div class="champion-banner">
-            <h1 style="color: #8B0000; font-size: 2.5rem; margin: 0;">🏆 CHAMPION 🏆</h1>
-            <h2 style="color: #8B0000; font-size: 2rem; margin: 1rem 0;">{winner}</h2>
-        </div>
-        ''', unsafe_allow_html=True)
 
 
 # Enhanced import function to handle Excel better
