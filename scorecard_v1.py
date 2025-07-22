@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 # Configuration
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 TOURNAMENT_NAME = "IGNITE 2025"
 
 # Initialize database
@@ -1105,17 +1105,17 @@ def get_team_logo_base64(team_name):
     # Multiple possible paths to check
     possible_paths = [
         # Relative to current working directory
-        Path(current_dir) / "team_logo" / f"{team_name.lower()}.png",
-        Path(current_dir) / "team_logo" / f"{team_name.lower()}.jpg",
+        Path(current_dir) / "team_logo" / f"{team_name}.png",
+        Path(current_dir) / "team_logo" / f"{team_name}.jpg",
         # Relative to script directory
-        script_dir / "team_logo" / f"{team_name.lower()}.png",
-        script_dir / "team_logo" / f"{team_name.lower()}.jpg",
+        script_dir / "team_logo" / f"{team_name}.png",
+        script_dir / "team_logo" / f"{team_name}.jpg",
         # Direct relative paths
-        Path("team_logo") / f"{team_name.lower()}.png",
-        Path("team_logo") / f"{team_name.lower()}.jpg",
+        Path("team_logo") / f"{team_name}.png",
+        Path("team_logo") / f"{team_name}.jpg",
         # Absolute paths (if team_logo is in root)
-        Path(".") / "team_logo" / f"{team_name.lower()}.png",
-        Path(".") / "team_logo" / f"{team_name.lower()}.jpg",
+        Path(".") / "team_logo" / f"{team_name}.png",
+        Path(".") / "team_logo" / f"{team_name}.jpg",
     ]
     
     logger.info(f"Searching for logo for team: {team_name}")
@@ -1540,10 +1540,10 @@ def show_knockout_bracket_alt():
         with col1:
             # Try to display team 1 logo
             logo_paths = [
-                f"team_logo/{match['team1'].lower()}.png",
-                f"team_logo/{match['team1'].lower()}.jpg",
-                f"./team_logo/{match['team1'].lower()}.png",
-                f"./team_logo/{match['team1'].lower()}.jpg"
+                f"team_logo/{match['team1']}.png",
+                f"team_logo/{match['team1']}.jpg",
+                f"./team_logo/{match['team1']}.png",
+                f"./team_logo/{match['team1']}.jpg"
             ]
             
             logo_displayed = False
