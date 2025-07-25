@@ -1857,7 +1857,7 @@ def show_stats():
                                     <span class="stat-value">{best_attack_team[1]}</span>
                                 </div>
                                 <div class="stat-description">
-                                    Team with highest Goals For (GF)
+                                    Team with lowest Goals Against (GA)
                                 </div>
                             </div>
                             <div style="margin-left: 15px;">
@@ -1867,6 +1867,21 @@ def show_stats():
                         """, unsafe_allow_html=True)
         
             except:
+                st.markdown(f"""
+        <div class="stat-tile">
+            <div class="stat-title">
+                🦁 Predators of the Pitch
+            </div>
+            <div class="stat-team">
+                {best_attack_team[0]}
+                <span class="stat-value">{best_attack_team[1]}</span>
+            </div>
+            <div class="stat-description">
+                Team with highest Goals For (GF)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        else:
                 st.markdown(f"""
         <div class="stat-tile">
             <div class="stat-title">
