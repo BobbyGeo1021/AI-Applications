@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import datetime
+import pytz
 import numpy as np
 import time
 
@@ -181,7 +182,8 @@ def update_knockout_match_score(match_id, score1, score2):
 def update_match_score(match_id, score1, score2):
     conn = sqlite3.connect('tournament.db')
     cursor = conn.cursor()
-    current_time = datetime.now().strftime('%H:%M')
+    ist = pytz.timezone('Asia/Kolkata')
+    current_time = datetime.now(ist).strftime('%H:%M')
     
     # Get match details
     cursor.execute("SELECT team1, team2, completed FROM matches WHERE id = ?", (match_id,))
