@@ -1940,7 +1940,7 @@ def show_stats():
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
-             else:
+               else:
                     # No logo found
                     st.markdown(f"""
                     <div class="stat-tile">
