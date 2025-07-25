@@ -1881,21 +1881,6 @@ def show_stats():
             </div>
         </div>
         """, unsafe_allow_html=True)
-        else:
-                st.markdown(f"""
-        <div class="stat-tile">
-            <div class="stat-title">
-                🦁 Predators of the Pitch
-            </div>
-            <div class="stat-team">
-                {best_attack_team[0]}
-                <span class="stat-value">{best_attack_team[1]}</span>
-            </div>
-            <div class="stat-description">
-                Team with highest Goals For (GF)
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
         
         # Strongest Defense Tile
         if best_defense_team:
