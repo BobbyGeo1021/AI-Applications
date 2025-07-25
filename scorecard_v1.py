@@ -1402,10 +1402,10 @@ def show_knockout_bracket():
         final_match = final.iloc[0]
         status = "🏆" if final_match['completed'] else "⏳"
         
-        st.markdown(f'''
-        <div class="match-box final-box">
-            <div class="match-title">FINAL {status}</div>
-        ''', unsafe_allow_html=True)
+        # st.markdown(f'''
+        # <div class="match-box final-box">
+        #     <div class="match-title">FINAL {status}</div>
+        # ''', unsafe_allow_html=True)
         
         if final_match['team1'] == 'TBD':
             st.markdown('<div style="text-align: center; color: white; padding: 2rem;">Awaiting Semi-Final Results</div>', unsafe_allow_html=True)
@@ -1416,6 +1416,8 @@ def show_knockout_bracket():
             
             # Single markdown for final
             st.markdown(f'''
+            <div class="match-box final-box">
+            <div class="match-title">FINAL {status}</div>
             <div class="teams-container">
                 <div class="team-section">
                     {final_team1_logo}
