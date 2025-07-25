@@ -181,6 +181,7 @@ def update_knockout_match_score(match_id, score1, score2):
 def update_match_score(match_id, score1, score2):
     conn = sqlite3.connect('tournament.db')
     cursor = conn.cursor()
+    current_time = datetime.now().strftime('%H:%M')
     
     # Get match details
     cursor.execute("SELECT team1, team2, completed FROM matches WHERE id = ?", (match_id,))
@@ -204,8 +205,8 @@ def update_match_score(match_id, score1, score2):
     
     # Update match
     cursor.execute('''
-        UPDATE matches SET score1 = ?, score2 = ?, completed = TRUE WHERE id = ?
-    ''', (score1, score2, match_id))
+        UPDATE matches SET score1 = ?, score2 = ?, completed = TRUE,end_time = ? WHERE id = ?
+    ''', (score1, score2,current_time, match_id))
     
     # Update team stats
     update_team_stats(cursor, team1, score1, score2, get_points(score1, score2), 1)
@@ -956,9 +957,11 @@ def show_fixtures():
         for _, match in matches_df.iterrows():
             status = "✅ Completed" if match['completed'] else "⏳ Pending"
             start_time = match['start_time'] if pd.notna(match['start_time']) else "TBD"
+            end_time = pd.to_datetime(match['end_time']).strftime('%H:%M') if pd.notna(match['end_time']) else "TBD"
             
             
-            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status} (🕒 {start_time})",
+            
+            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status} (🕒 {pd.to_datetime(match['start_time']).strftime('%H:%M')} to {end_time})",
                            expanded=not match['completed']):
                 
                 # Mobile-optimized layout: Stack vertically instead of side-by-side
@@ -996,7 +999,7 @@ def show_fixtures():
                 st.markdown(f'''
 <div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
     <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">
-        {match['match_name']}
+        {match['match_name']} | ⏰ Last Updated: {end_time}
     </div>
     <div style="text-align: center; font-size: 0.9rem; color: #000000;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 300px; margin: 0 auto;">
