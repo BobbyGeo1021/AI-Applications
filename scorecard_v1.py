@@ -718,7 +718,7 @@ def main():
         if st.sidebar.button("Logout", type="secondary"):
             st.session_state.admin_logged_in = False
             st.rerun()
-    tab1, tab2, tab3 = st.tabs(["🏆 Scoreboard", "📅 Fixtures", "🎯 Knockout Bracket"])
+    tab1, tab2, tab3 = st.tabs(["🏆 Scoreboard", "📅 Fixtures","Stats 📊", "🎯 Knockout Bracket"])
 
     # Navigation
     st.sidebar.markdown("---")
@@ -743,6 +743,8 @@ def main():
     with tab2:  
         show_fixtures()
     with tab3:
+        show_stats()
+    with tab4:
         show_knockout_bracket()
 
 def show_scoreboard():
@@ -1581,6 +1583,405 @@ def show_knockout_bracket_alt():
                 st.write(f"Score: {'-' if not final_match['completed'] else int(final_match['score2'])}")
         else:
             st.info("Awaiting Semi-Final Results")
+
+from pathlib import Path
+
+def show_stats():
+    """Display football tournament stats with mobile-optimized layout"""
+    
+    # Custom CSS for football-themed styling
+    st.markdown("""
+    <style>
+    .stats-container {
+        background: linear-gradient(135deg, #0f4c3a 0%, #1e7e34 50%, #28a745 100%);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 10px 0;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        border: 3px solid #ffd700;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stats-container::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(255,255,255,0.03) 2px,
+            rgba(255,255,255,0.03) 4px
+        );
+        animation: grass-texture 20s linear infinite;
+    }
+    
+    @keyframes grass-texture {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(0px) translateY(0px); }
+    }
+    
+    .stat-tile {
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        border-left: 6px solid #ffd700;
+        position: relative;
+        z-index: 2;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stat-tile:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+    
+    .stat-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #0f4c3a;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .stat-team {
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: #dc3545;
+        margin: 10px 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-description {
+        font-size: 1rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #28a745;
+        display: inline-block;
+        padding: 5px 15px;
+        background: rgba(40, 167, 69, 0.1);
+        border-radius: 20px;
+        margin-left: 10px;
+    }
+    
+    .top-teams-container {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 12px;
+        padding: 15px;
+        margin: 12px 0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        border: 2px solid #ffd700;
+    }
+    
+    .top-teams-title {
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ffd700;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .teams-row {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        padding: 10px 0;
+    }
+    
+    .team-logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(255,255,255,0.1);
+        padding: 15px;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+        min-width: 120px;
+        backdrop-filter: blur(10px);
+        margin: 5px;
+    }
+    
+    .team-logo-container:hover {
+        transform: scale(1.05);
+        background: rgba(255,255,255,0.15);
+    }
+    
+    .team-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #ffd700;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        margin-bottom: 8px;
+    }
+    
+    .team-name {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #ffffff;
+        text-align: center;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    }
+    
+    .team-points {
+        font-size: 0.8rem;
+        color: #ffd700;
+        font-weight: bold;
+    }
+    
+    @media (max-width: 768px) {
+        .stat-tile {
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .stat-title {
+            font-size: 1.2rem;
+        }
+        
+        .stat-team {
+            font-size: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+        
+        .teams-row {
+            justify-content: center;
+        }
+        
+        .team-logo-container {
+            min-width: 100px;
+            padding: 10px;
+        }
+        
+        .team-logo {
+            width: 50px;
+            height: 50px;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Connect to database
+    try:
+        conn = sqlite3.connect('tournament.db')
+        cursor = conn.cursor()
+        
+        # Fetch team stats
+        cursor.execute("""
+            SELECT name, goals_for, goals_against, points, matches_played 
+            FROM teams 
+            ORDER BY points DESC, goals_for DESC
+        """)
+        teams_data = cursor.fetchall()
+        
+        if not teams_data:
+            st.warning("⚠️ No team data available yet!")
+            return
+        
+        # Find best attacking team (most goals scored)
+        best_attack_team = max(teams_data, key=lambda x: x[1])
+        
+        # Find best defensive team (least goals conceded, but only teams that played matches)
+        defensive_teams = [team for team in teams_data if team[4] > 0]  # matches_played > 0
+        if defensive_teams:
+            best_defense_team = min(defensive_teams, key=lambda x: x[2])
+        else:
+            best_defense_team = teams_data[0] if teams_data else None
+        
+        # Stats Tiles Container
+        #st.markdown('<div class="stats-container">', unsafe_allow_html=True)
+        
+        # Most Goals Scored Tile
+        # st.markdown(f"""
+        # <div class="stat-tile">
+        #     <div class="stat-title">
+        #         🦁 Predators of the Pitch
+        #     </div>
+        #     <div class="stat-team">
+        #         {best_attack_team[0]}
+        #         <span class="stat-value">{best_attack_team[1]}</span>
+        #     </div>
+        #     <div class="stat-description">
+        #         Team with highest Goals For (GF)
+        #     </div>
+        # </div>
+        # """, unsafe_allow_html=True)
+        team_name = best_attack_team[0]
+
+        # Try to find team logo
+        logo_path = None
+        logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
+        for ext in logo_extensions:
+            potential_path = f"team_logo/{team_name.lower()}{ext}"
+            if os.path.exists(potential_path):
+                logo_path = potential_path
+                break
+        
+        # Create tile with logo on the right
+        if logo_path:
+            try:
+                import base64
+                with open(logo_path, "rb") as img_file:
+                    img_data = base64.b64encode(img_file.read()).decode()
+                    img_ext = logo_path.split('.')[-1].lower()
+                    if img_ext == 'jpg':
+                        img_ext = 'jpeg'
+                st.markdown(f"""
+                        <div class="stat-tile" style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="flex: 1;">
+                                <div class="stat-title">
+                                    🦁 Predators of the Pitch
+                                </div>
+                                <div class="stat-team">
+                                    {best_attack_team[0]}
+                                    <span class="stat-value">{best_attack_team[1]}</span>
+                                </div>
+                                <div class="stat-description">
+                                    Team with lowest Goals Against (GA)
+                                </div>
+                            </div>
+                            <div style="margin-left: 15px;">
+                                <img src="data:image/{img_ext};base64,{img_data}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd700;" alt="{team_name}">
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+            except:
+                st.markdown(f"""
+        <div class="stat-tile">
+            <div class="stat-title">
+                🦁 Predators of the Pitch
+            </div>
+            <div class="stat-team">
+                {best_attack_team[0]}
+                <span class="stat-value">{best_attack_team[1]}</span>
+            </div>
+            <div class="stat-description">
+                Team with highest Goals For (GF)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Strongest Defense Tile
+        if best_defense_team:
+                team_name = best_defense_team[0]
+                
+                # Try to find team logo
+                logo_path = None
+                logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
+                for ext in logo_extensions:
+                    potential_path = f"team_logo/{team_name.lower()}{ext}"
+                    if os.path.exists(potential_path):
+                        logo_path = potential_path
+                        break
+                
+                # Create tile with logo on the right
+                if logo_path:
+                    try:
+                        import base64
+                        with open(logo_path, "rb") as img_file:
+                            img_data = base64.b64encode(img_file.read()).decode()
+                            img_ext = logo_path.split('.')[-1].lower()
+                            if img_ext == 'jpg':
+                                img_ext = 'jpeg'
+                        
+                        st.markdown(f"""
+                        <div class="stat-tile" style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="flex: 1;">
+                                <div class="stat-title">
+                                    🛡️ The Iron Wall
+                                </div>
+                                <div class="stat-team">
+                                    {best_defense_team[0]}
+                                    <span class="stat-value">{best_defense_team[2]}</span>
+                                </div>
+                                <div class="stat-description">
+                                    Team with lowest Goals Against (GA)
+                                </div>
+                            </div>
+                            <div style="margin-left: 15px;">
+                                <img src="data:image/{img_ext};base64,{img_data}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd700;" alt="{team_name}">
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    except:
+                        # Fallback without image
+                        st.markdown(f"""
+                        <div class="stat-tile">
+                            <div class="stat-title">
+                                🛡️ The Iron Wall
+                            </div>
+                            <div class="stat-team">
+                                {best_defense_team[0]}
+                                <span class="stat-value">{best_defense_team[2]}</span>
+                            </div>
+                            <div class="stat-description">
+                                Team with lowest Goals Against (GA)
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    # No logo found
+                    st.markdown(f"""
+                    <div class="stat-tile">
+                        <div class="stat-title">
+                            🛡️ The Iron Wall
+                        </div>
+                        <div class="stat-team">
+                            {best_defense_team[0]}
+                            <span class="stat-value">{best_defense_team[2]}</span>
+                        </div>
+                        <div class="stat-description">
+                            Team with lowest Goals Against (GA)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                
+        st.markdown('</div>', unsafe_allow_html=True)  # Close stats-container
+            
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric(
+                label="🎯 Total Goals Scored",
+                value=sum(team[1] for team in teams_data),
+                help="Combined goals by all teams"
+            )
+        
+        with col2:
+            st.metric(
+                label="⚽ Total Matches Played", 
+                value=sum(team[4] for team in teams_data) // 2,  # Divide by 2 since each match counts for 2 teams
+                help="Total completed matches"
+            )
+        
+        conn.close()
+        
+    except sqlite3.Error as e:
+        st.error(f"Database error: {e}")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 #############################################################################
 
 
