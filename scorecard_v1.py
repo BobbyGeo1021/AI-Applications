@@ -958,7 +958,7 @@ def show_fixtures():
             start_time = match['start_time'] if pd.notna(match['start_time']) else "TBD"
             
             
-            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status} (🕒 {start_time})",", 
+            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status} (🕒 {start_time})",
                            expanded=not match['completed']):
                 
                 # Mobile-optimized layout: Stack vertically instead of side-by-side
