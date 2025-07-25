@@ -747,6 +747,48 @@ def main():
     with tab4:
         show_knockout_bracket()
 
+    # Footer with logo and host text
+    footer_logo_path = "assets/MGOCSM.png"  # Update if different from the header
+    footer_logo_base64 = img_to_base64(footer_logo_path)
+
+    st.markdown(f"""
+    <style>
+    .footer-container {{
+        position: relative;
+        bottom: 0;
+        width: 100%;
+        padding: 20px 0 40px 0;
+        background-color: black;
+        text-align: center;
+        margin-top: 2rem;
+    }}
+
+    .footer-logo {{
+        width: 75px;
+        height: 75px;
+        margin:  auto;
+        display: block;
+        object-fit: cover;
+        border-radius: 50%;
+        filter: drop-shadow(0px 0px 5px orange);
+        animation: float 3s ease-in-out infinite;
+    }}
+
+    .footer-text {{
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 0.7rem;
+        margin-top: 9px;
+        font-style: italic;
+    }}
+    </style>
+
+    <div class="footer-container">
+        <img class="footer-logo" src="data:image/png;base64,{footer_logo_base64}" alt="Footer Logo" />
+        <div class="footer-text">Hosted by MGOCSM Dehuroad</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def show_scoreboard():
     col1, col2 = st.columns([3, 1])
     
