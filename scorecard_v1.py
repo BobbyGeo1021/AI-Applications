@@ -1832,7 +1832,7 @@ def show_stats():
         logo_path = None
         logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
         for ext in logo_extensions:
-            potential_path = f"team_logo/{team_name.lower()}{ext}"
+            potential_path = f"team_logo/{team_name}{ext}"
             if os.path.exists(potential_path):
                 logo_path = potential_path
                 break
@@ -1890,7 +1890,7 @@ def show_stats():
                 logo_path = None
                 logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
                 for ext in logo_extensions:
-                    potential_path = f"team_logo/{team_name.lower()}{ext}"
+                    potential_path = f"team_logo/{team_name}{ext}"
                     if os.path.exists(potential_path):
                         logo_path = potential_path
                         break
