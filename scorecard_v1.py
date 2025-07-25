@@ -900,49 +900,49 @@ def show_scoreboard():
         else:
             st.info("No teams available. Please upload fixtures first.")
     
-    with col2:
-        st.subheader("📈 Stats")
+    # with col2:
+    #     st.subheader("📈 Stats")
         
-        matches_df = get_matches()
-        total_matches = len(matches_df)
-        completed_matches = len(matches_df[matches_df['completed'] == True])
+    #     matches_df = get_matches()
+    #     total_matches = len(matches_df)
+    #     completed_matches = len(matches_df[matches_df['completed'] == True])
         
-        st.markdown(f'''
-        <div style="
-            background: linear-gradient(135deg, #2196F3, #21CBF3); 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin: 10px 0;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-        ">
-            <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">📊 MATCHES</div>
-            <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
-                TOTAL: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches}</span><br>
-                DONE: <span style="font-size: 1.1rem; font-weight: bold;">{completed_matches}</span><br>
-                LEFT: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches - completed_matches}</span>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
+    #     st.markdown(f'''
+    #     <div style="
+    #         background: linear-gradient(135deg, #2196F3, #21CBF3); 
+    #         padding: 15px; 
+    #         border-radius: 12px; 
+    #         margin: 10px 0;
+    #         box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    #     ">
+    #         <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">📊 MATCHES</div>
+    #         <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
+    #             TOTAL: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches}</span><br>
+    #             DONE: <span style="font-size: 1.1rem; font-weight: bold;">{completed_matches}</span><br>
+    #             LEFT: <span style="font-size: 1.1rem; font-weight: bold;">{total_matches - completed_matches}</span>
+    #         </div>
+    #     </div>
+    #     ''', unsafe_allow_html=True)
         
-        if not teams_df.empty:
-            top_team = teams_df.iloc[0]
-            st.markdown(f'''
-            <div style="
-                background: linear-gradient(135deg, #FF6B35, #F7931E); 
-                padding: 15px; 
-                border-radius: 12px; 
-                margin: 10px 0;
-                box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-            ">
-                <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">🏆 LEADER</div>
-                <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
-                    <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">{top_team['name']}</div>
-                    POINTS: <span style="font-size: 1.2rem; font-weight: bold;">{top_team['points']}</span><br>
-                    GOALS: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for']}</span><br>
-                    GD: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for'] - top_team['goals_against']:+d}</span>
-                </div>
-            </div>
-            ''', unsafe_allow_html=True)
+    #     if not teams_df.empty:
+    #         top_team = teams_df.iloc[0]
+    #         st.markdown(f'''
+    #         <div style="
+    #             background: linear-gradient(135deg, #FF6B35, #F7931E); 
+    #             padding: 15px; 
+    #             border-radius: 12px; 
+    #             margin: 10px 0;
+    #             box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    #         ">
+    #             <div style="font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 8px;">🏆 LEADER</div>
+    #             <div style="font-size: 0.9rem; color: #fff; font-weight: 600; line-height: 1.5;">
+    #                 <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">{top_team['name']}</div>
+    #                 POINTS: <span style="font-size: 1.2rem; font-weight: bold;">{top_team['points']}</span><br>
+    #                 GOALS: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for']}</span><br>
+    #                 GD: <span style="font-size: 1.1rem; font-weight: bold;">{top_team['goals_for'] - top_team['goals_against']:+d}</span>
+    #             </div>
+    #         </div>
+    #         ''', unsafe_allow_html=True)
 
 def show_fixtures():
     #st.markdown('<div class="tournament-container">', unsafe_allow_html=True)
