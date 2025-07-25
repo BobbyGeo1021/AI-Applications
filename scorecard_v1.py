@@ -1884,50 +1884,30 @@ def show_stats():
         
         # Strongest Defense Tile
         if best_defense_team:
-                team_name = best_defense_team[0]
-                
-                # Try to find team logo
-                logo_path = None
-                logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
-                for ext in logo_extensions:
-                    potential_path = f"team_logo/{team_name}{ext}"
-                    if os.path.exists(potential_path):
-                        logo_path = potential_path
-                        break
-                
-                # Create tile with logo on the right
-                if logo_path:
-                    try:
-                        import base64
-                        with open(logo_path, "rb") as img_file:
-                            img_data = base64.b64encode(img_file.read()).decode()
-                            img_ext = logo_path.split('.')[-1].lower()
-                            if img_ext == 'jpg':
-                                img_ext = 'jpeg'
-                        
-                        st.markdown(f"""
-                        <div class="stat-tile" style="display: flex; align-items: center; justify-content: space-between;">
-                            <div style="flex: 1;">
-                                <div class="stat-title">
-                                    🛡️ The Iron Wall
-                                </div>
-                                <div class="stat-team">
-                                    {best_defense_team[0]}
-                                    <span class="stat-value">{best_defense_team[2]}</span>
-                                </div>
-                                <div class="stat-description">
-                                    Team with lowest Goals Against (GA)
-                                </div>
-                            </div>
-                            <div style="margin-left: 15px;">
-                                <img src="data:image/{img_ext};base64,{img_data}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd700;" alt="{team_name}">
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    except:
-                        # Fallback without image
-                        st.markdown(f"""
-                        <div class="stat-tile">
+            team_name = best_defense_team[0]
+            
+            # Try to find team logo
+            logo_path = None
+            logo_extensions = ['.png', '.jpg', '.jpeg', '.gif']
+            for ext in logo_extensions:
+                potential_path = f"team_logo/{team_name}{ext}"
+                if os.path.exists(potential_path):
+                    logo_path = potential_path
+                    break
+            
+            # Create tile with logo on the right
+            if logo_path:
+                try:
+                    import base64
+                    with open(logo_path, "rb") as img_file:
+                        img_data = base64.b64encode(img_file.read()).decode()
+                        img_ext = logo_path.split('.')[-1].lower()
+                        if img_ext == 'jpg':
+                            img_ext = 'jpeg'
+                    
+                    st.markdown(f"""
+                    <div class="stat-tile" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="flex: 1;">
                             <div class="stat-title">
                                 🛡️ The Iron Wall
                             </div>
@@ -1939,9 +1919,13 @@ def show_stats():
                                 Team with lowest Goals Against (GA)
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
-               else:
-                    # No logo found
+                        <div style="margin-left: 15px;">
+                            <img src="data:image/{img_ext};base64,{img_data}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd700;" alt="{team_name}">
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                except:
+                    # Fallback without image
                     st.markdown(f"""
                     <div class="stat-tile">
                         <div class="stat-title">
@@ -1956,6 +1940,22 @@ def show_stats():
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
+            else:
+                # No logo found
+                st.markdown(f"""
+                <div class="stat-tile">
+                    <div class="stat-title">
+                        🛡️ The Iron Wall
+                    </div>
+                    <div class="stat-team">
+                        {best_defense_team[0]}
+                        <span class="stat-value">{best_defense_team[2]}</span>
+                    </div>
+                    <div class="stat-description">
+                        Team with lowest Goals Against (GA)
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 
         st.markdown('</div>', unsafe_allow_html=True)  # Close stats-container
