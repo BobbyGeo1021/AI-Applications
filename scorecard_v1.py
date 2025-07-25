@@ -783,7 +783,8 @@ def main():
     </style>
 
     <div class="footer-container">
-        <img class="footer-logo" src="data:image/png;base64,{footer_logo_base64}" alt="Footer Logo" />
+        <a href="https://www.instagram.com/mgocsm_dehuroad?igsh=dmN6c3ZneDN3eW5i" target="_blank">
+        <img class="footer-logo" src="data:image/png;base64,{footer_logo_base64}" alt="Footer Logo" /></a>
         <div class="footer-text">Hosted by MGOCSM Dehuroad</div>
     </div>
     """, unsafe_allow_html=True)
