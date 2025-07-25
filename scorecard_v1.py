@@ -1859,7 +1859,7 @@ def show_stats():
                                     <span class="stat-value">{best_attack_team[1]}</span>
                                 </div>
                                 <div class="stat-description">
-                                    Team with Highest Goals Scored (GF)
+                                    Team with Highest Goals Scored (GF: Goals For)
                                 </div>
                             </div>
                             <div style="margin-left: 15px;">
@@ -1918,7 +1918,7 @@ def show_stats():
                                 <span class="stat-value">{best_defense_team[2]}</span>
                             </div>
                             <div class="stat-description">
-                                Team with lowest Goals Against (GA)
+                                Team with lowest Goals Against (GA: Goals Against)
                             </div>
                         </div>
                         <div style="margin-left: 15px;">
