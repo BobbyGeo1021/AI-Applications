@@ -718,7 +718,7 @@ def main():
         if st.sidebar.button("Logout", type="secondary"):
             st.session_state.admin_logged_in = False
             st.rerun()
-    tab1, tab2, tab3 = st.tabs(["🏆 Scoreboard", "📅 Fixtures","Stats 📊", "🎯 Knockout Bracket"])
+    tab1, tab2, tab3,tab4 = st.tabs(["🏆 Scoreboard", "📅 Fixtures","Stats 📊", "🎯 Knockout Bracket"])
 
     # Navigation
     st.sidebar.markdown("---")
