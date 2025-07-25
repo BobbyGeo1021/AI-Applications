@@ -1000,7 +1000,7 @@ def show_fixtures():
             
                 st.markdown(f'''
 <div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
-    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">
+    <div style="font-size: 0.6rem; color: #000000; text-align: center; margin-bottom: 4px;">
         {match['match_name']} | ⏰ Last Updated: {end_time}
     </div>
     <div style="text-align: center; font-size: 0.9rem; color: #000000;">
