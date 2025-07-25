@@ -34,7 +34,9 @@ def init_database():
             score1 INTEGER,
             score2 INTEGER,
             completed BOOLEAN DEFAULT FALSE,
-            match_order INTEGER
+            match_order INTEGER,
+            start_time DATETIME,
+            end_time DATETIME
         )
     ''')
     
@@ -94,58 +96,7 @@ def clear_all_data():
     conn.commit()
     conn.close()
 
-def import_fixtures_from_excel(uploaded_file):
-    try:
-        # Check if already processed
-        if st.session_state.get('file_processed', False):
-            return True, "File already processed"
-        
-        df = pd.read_excel(uploaded_file)
-        
-        # Check required columns
-        required_cols = ['Match', 'Team 1', 'Team 2']
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            return False, f"Missing columns: {', '.join(missing_cols)}"
-        
-        # Clean data
-        df = df.dropna(subset=required_cols)
-        df['Team 1'] = df['Team 1'].str.strip()
-        df['Team 2'] = df['Team 2'].str.strip()
-        df['Match'] = df['Match'].str.strip()
-        
-        # Clear existing data
-        clear_all_data()
-        
-        conn = sqlite3.connect('tournament.db')
-        cursor = conn.cursor()
-        
-        # Extract unique teams
-        teams = set()
-        for _, row in df.iterrows():
-            teams.add(row['Team 1'])
-            teams.add(row['Team 2'])
-        
-        # Insert teams
-        for team in teams:
-            cursor.execute("INSERT OR IGNORE INTO teams (name) VALUES (?)", (team,))
-        
-        # Insert matches
-        for i, row in df.iterrows():
-            cursor.execute('''
-                INSERT INTO matches (match_name, team1, team2, match_order)
-                VALUES (?, ?, ?, ?)
-            ''', (row['Match'], row['Team 1'], row['Team 2'], i + 1))
-        
-        conn.commit()
-        conn.close()
-        
-        # Mark as processed
-        st.session_state.file_processed = True
-        return True, f"Successfully imported {len(df)} matches with {len(teams)} teams!"
-    
-    except Exception as e:
-        return False, f"Error importing fixtures: {str(e)}"
+
 
 
 def update_knockout_match_score(match_id, score1, score2):
@@ -1004,8 +955,10 @@ def show_fixtures():
         
         for _, match in matches_df.iterrows():
             status = "✅ Completed" if match['completed'] else "⏳ Pending"
+            start_time = match['start_time'] if pd.notna(match['start_time']) else "TBD"
             
-            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status}", 
+            
+            with st.expander(f"{match['match_name']}: {match['team1']} vs {match['team2']} - {status} (🕒 {start_time})",", 
                            expanded=not match['completed']):
                 
                 # Mobile-optimized layout: Stack vertically instead of side-by-side
@@ -1071,7 +1024,7 @@ def show_fixtures():
             for _, match in pending_matches.iterrows():
                 st.markdown(f'''
                 <div style="background: #FFF3E0; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #FF9800;">
-                    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}</div>
+                    <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">{match['match_name']}  | 🕒{pd.to_datetime(match['start_time']).strftime('%H:%M')} PM</div>
                     <div style="text-align: center; font-size: 0.9rem;color: #000000;">
                             <div style="display: flex; justify-content: space-between; align-items: center; max-width: 300px; margin: 0 auto;">
             <span style="flex: 1; text-align: center;">{match['team1']}</span>
@@ -1644,6 +1597,34 @@ def import_fixtures_from_excel(uploaded_file):
         df['Team 2'] = df['Team 2'].str.strip()
         df['Match'] = df['Match'].str.strip()
         
+        # Handle time columns (convert datetime.time objects to strings)
+        def convert_time_to_string(series):
+            converted = []
+            for value in series:
+                if pd.isna(value) or value is None:
+                    converted.append(None)
+                elif hasattr(value, 'strftime'):  # datetime.time object
+                    converted.append(value.strftime('%H:%M:%S'))
+                else:
+                    # Try to parse as string if it's not already a time object
+                    try:
+                        time_obj = pd.to_datetime(str(value), format='%H:%M:%S').time()
+                        converted.append(time_obj.strftime('%H:%M:%S'))
+                    except:
+                        converted.append(None)
+            return converted
+        
+        # Process time columns
+        if 'StartTime' in df.columns:
+            df['StartTime'] = convert_time_to_string(df['StartTime'])
+        else:
+            df['StartTime'] = [None] * len(df)
+            
+        if 'EndTime' in df.columns:
+            df['EndTime'] = convert_time_to_string(df['EndTime'])
+        else:
+            df['EndTime'] = [None] * len(df)
+        
         # Clear existing data
         clear_all_data()
         
@@ -1674,10 +1655,14 @@ def import_fixtures_from_excel(uploaded_file):
             else:
                 score1 = score2 = None
             
+            # Get the time values
+            start_time = row['StartTime']
+            end_time = row['EndTime']
+            
             cursor.execute('''
-                INSERT INTO matches (match_name, team1, team2, score1, score2, completed, match_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (row['Match'], row['Team 1'], row['Team 2'], score1, score2, completed, i + 1))
+                INSERT INTO matches (match_name, team1, team2, score1, score2, completed, match_order, start_time, end_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (row['Match'], row['Team 1'], row['Team 2'], score1, score2, completed, i + 1, start_time, end_time))
             
             # Update team stats if scores exist
             if completed:
