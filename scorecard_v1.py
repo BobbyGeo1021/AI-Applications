@@ -996,6 +996,8 @@ def show_fixtures():
             st.subheader("✅ Completed Matches")
             for _, match in completed_matches.iterrows():
                 result_emoji = "🏆" if match['score1'] != match['score2'] else "🤝"
+                end_time = pd.to_datetime(match['end_time']).strftime('%H:%M') if pd.notna(match['end_time']) else "TBD"
+            
                 st.markdown(f'''
 <div style="background: #E8F5E8; border-radius: 8px; padding: 8px; margin: 4px 0; border-left: 3px solid #4CAF50;">
     <div style="font-size: 0.8rem; color: #000000; text-align: center; margin-bottom: 4px;">
